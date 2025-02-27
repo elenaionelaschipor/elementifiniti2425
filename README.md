@@ -3,8 +3,8 @@
 Benvenuti nella repository ufficiale del corso di **Elementi Finiti 2024-2025**. Qui troverete tutto il materiale necessario per le esercitazioni, inclusi script, notebook e documentazione.
 
 ## 📚 Informazioni sul corso
-- **Docente**: Prof. Giancarlo Sangalli ([Sito web](https://www-dimat.unipv.it/sangalli/))
-- **Tutor**: Ivan Bioli ([Homepage](https://sites.google.com/view/ivan-bioli/homepage))
+- **Docente**: [Prof. Giancarlo Sangalli](https://www-dimat.unipv.it/sangalli/)
+- **Tutor**: [Ivan Bioli](https://sites.google.com/view/ivan-bioli/homepage)
 - **Pagina ufficiale del corso**: [Elementi Finiti - UNIPV](https://www-dimat.unipv.it/sangalli/elementi_finiti_mat.html)
 
 ## 📌 Contenuto della repository
