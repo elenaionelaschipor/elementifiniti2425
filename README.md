@@ -34,7 +34,7 @@ Se non avete `git`, potete scaricare il contenuto come file ZIP e decomprimerlo.
 ### 4️⃣ Installare i pacchetti necessari
 Entrate nella cartella del progetto e aprite un terminale, quindi eseguite:
 ```bash
-julia --project=./elementifinitiunipv/ -e 'using Pkg; Pkg.instantiate()'
+julia --project=./elementifinitiunipv_pkg/ -e 'using Pkg; Pkg.instantiate()'
 ```
 Questo comando imposta l'ambiente di lavoro, scarica e installa i pacchetti richiesti.
 
