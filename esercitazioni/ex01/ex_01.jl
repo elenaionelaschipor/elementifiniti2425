@@ -1,6 +1,5 @@
 import Pkg
-Pkg.activate("elementifinitiunipv_pkg")
-
+Pkg.activate("C:/Users/elena_/Documents/GitHub/elementifiniti2425/elementifinitiunipv_pkg")
 using LinearAlgebra
 using SparseArrays
 using LaTeXStrings
@@ -73,3 +72,75 @@ plot!(N, 1 ./N.^2, xscale=:log10, yscale=:log10, label =L"riferimento $\frac{1}{
 title!("Errore")
 xlabel!(L"$N$")
 ylabel!(L"$||u - u_h||_{\infty}$")
+
+using Revise
+includet("C:/Users/elena_/Documents/GitHub/elementifiniti2425/modules/Meshing.jl")
+
+
+begin
+    
+mesh_square(0.3)
+mesh_circle(0.3)
+
+
+# cambiare eventualmente a square_003 o circle 003 per avere mesh più piccole (ci ho messo 5 minuti a fare i conti non rifacciamoli)
+T_circle_ind, T_circle_points= get_nodes_connectivity("tmp_circle.msh")
+
+T_square_ind, T_square_points = get_nodes_connectivity("tmp_square.msh")
+
+b_circle_ind, b_circle_p = get_boundary_nodes("tmp_circle.msh")
+b_square_ind, b_square_p = get_boundary_nodes("tmp_square.msh")
+
+
+function plot_mesh(T_ind, T_points, b_ind, b_p)
+    p = plot(axis = false, ratio = 1)
+    N_tri = size(T_ind, 2)
+    N_points = size(T_points, 2)
+    N_bounds = size(b_ind,1)
+    # list_points_x = []
+    # list_points_y = []
+    boundary_nodes = []
+    for j in 1:N_bounds
+        push!(boundary_nodes, b_p[:, j])
+    end
+    for i in 1:N_tri
+        i1, i2, i3 = T_ind[:, i]
+        
+        x1, y1 = T_points[:, i1]
+        x2, y2 = T_points[:, i2]
+        x3, y3 = T_points[:, i3]
+        # append!(list_points_x, [x1, x2, x3])
+        # append!(list_points_y, [y1,y2,y3])
+        plot!([x1,x2], [y1, y2], label="", lw=2, color=:green)
+        plot!([x2, x3], [y2,y3], label="", lw=2, color=:green)
+        plot!([x3,x1], [y3,y1], label="", lw=2, color=:green)
+
+        if [x1, y1] in boundary_nodes && [x2, y2] in boundary_nodes
+            plot!([x1,x2], [y1, y2], label="", lw=2, color=:blue)
+        end
+        if [x2, y2] in boundary_nodes && [x3, y3] in boundary_nodes
+            plot!([x2,x3], [y2, y3], label="", lw=2, color=:blue)
+        end
+
+        if [x3, y3] in boundary_nodes && [x1, y1] in boundary_nodes
+            plot!([x3,x1], [y3,y1], label="", lw=2, color=:blue)
+        end
+
+
+        
+    end
+
+    display(p)
+    # plot(list_points_x, list_points_y, label = "", color=:green)
+    # return Nothing
+end
+
+
+plot_mesh(T_circle_ind, T_circle_points, b_circle_ind, b_circle_p)
+plot_mesh(T_square_ind, T_square_points, b_square_ind, b_square_p)
+
+end
+
+import Meshes
+mesh = to_Meshes(T_circle_ind, T_circle_points)
+Meshes.viz(mesh, showsegments = true)
