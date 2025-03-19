@@ -79,15 +79,19 @@ Meshes.viz(mesh, showsegments = true)
 
 
 
-
-# begin
-
-
-    function u(x)
+ begin
+    function u1(x)
         return exp(x[1]+x[2])
     end
-
-    integrale_esatto = 2/3
+    function u2(x)
+        return x[1]^2 + x[2]^2
+    end
+    function u3(x)
+        return exp(x[1]^2+x[2]^2)
+    end
+    function u4(x)
+        return 1
+    end
 
     function triarea(V1, V2, V3)
         area = 0.5 * abs(V1[1] * (V2[2] - V3[2]) + V2[1] * (V3[2] - V1[2]) + V3[1] * (V1[2] - V2[2]))
@@ -96,8 +100,7 @@ Meshes.viz(mesh, showsegments = true)
 
     function b(T_ind, T_points)
         N_tri = size(T_ind, 2)
-        bx = []
-        by = []
+        ba = zeros(N_tri, 2)
         for i in 1:N_tri
             i1, i2, i3 = T_ind[:, i]
             
@@ -105,14 +108,14 @@ Meshes.viz(mesh, showsegments = true)
             x2, y2 = T_points[:, i2]
             x3, y3 = T_points[:, i3]
             
-            push!(bx , (x1+x2+x3)/3)
-            push!(by , (y1+y2+y3)/3)
+            ba[i,1] = (x1+x2+x3)/3
+            ba[i, 2] =  (y1+y2+y3)/3
         end
-        return bx, by
+        return ba
     end
 
     function Q0(u, T_ind, T_points)
-        bx, by = b(T_ind, T_points)
+        baricentro =  b(T_ind, T_points)
         N_tri = size(T_ind, 2)
         Q = 0
         for i in 1:N_tri
@@ -122,8 +125,7 @@ Meshes.viz(mesh, showsegments = true)
             V2 = T_points[:, i2]
             V3 = T_points[:, i3]
             area_T = triarea(V1, V2, V3) 
-
-            Q += area_T * u(bx[i], by[i])
+            Q += area_T * u(baricentro[i, :])
         end
         return Q
     end
@@ -172,33 +174,77 @@ Meshes.viz(mesh, showsegments = true)
             return Q2(u, T_ind, T_points)
         end
     end
-# end
+end
 # test
 
-errors = zeros(15, 3)
+
+i_es_sq = [exp(2)-2*exp(1)+1, 2/3] 
+i_es_cr = [pi *(exp(1)-1), pi] 
+
+u_sq = [u1, u2]
+u_cr = [u3, u4]
+
+errors = zeros(15, 3, 4)
 H = LinRange(10^-2, 1, 15)
 for j in 1:15 
     h = H[j]
     mesh_square(h)
-    T_ind, T_points = get_nodes_connectivity("tmp_square.msh")
+    mesh_circle(h)
+    T_ind_S, T_points_S = get_nodes_connectivity("tmp_square.msh")
+    T_ind_C, T_points_C = get_nodes_connectivity("tmp_circle.msh")
     
-    for i in 0:2
-        q = quadratura(u, T_ind, T_points, i)
-        errors[j, i+1] = abs(q-integrale_esatto)
+    for z in 1:2
+        u = u_sq[z]
+        integrale_esatto = i_es_sq[z]
+        for i in 0:2
+            q = quadratura(u, T_ind_S, T_points_S, i)
+            errors[j, i+1, z] = abs(q-integrale_esatto)
+        end
+    end
+    for z in 1:2
+        u = u_cr[z]
+        integrale_esatto = i_es_cr[z]
+        for i in 0:2
+            q = quadratura(u, T_ind_C, T_points_C, i)
+            errors[j, i+1, z+2] = abs(q-integrale_esatto)
+        end
     end
     # errors = hcat(errors, err)
     println(h, "-------------------------")
 end
 
 println(errors)
-begin
-p = plot()
-for i in 0:2
-    plot!(H,errors[:, i+1], xscale = :log10, yscale=:log10, label = "errore, i="*string(i), lw = 2, ms = 2)
-end
-plot!(H, H,  xscale = :log10, yscale=:log10, label = "rif 1 ord", lw = 2, ms = 2)
 
-plot!(H, H.^2, xscale = :log10, yscale=:log10, label = "rif 2 ord", lw = 2, ms = 2)
-display(p)
-
+etichette = [L"Errore con $u(x,y)= e^{x+y}$ sul quadrato", L"Errore con $u(x,y)=x^2+y^2$ sul quadrato", 
+L"Errore con $u(x,y)=e^{x^2+y^2}$ sul cerchio", L"Errore con $u(x,y) = 1$ sul cerchio"]
+for z in 1:4
+    p = plot(legend = :outerbottomright)
+    for i in 0:2
+        x = H
+        y = errors[:, i+1, z]
+        inds = y.>0
+        plot!(x[inds], y[inds], xscale = :log10, yscale=:log10, label = L"errore di $Q_%$(i)$", ls=:solid, marker=:circle, lw = 2, ms = 5)
+        title!(etichette[z])
+    end
+    plot!(H, H.^2,  xscale = :log10, yscale=:log10, label = L"riferimento $h^2$", lw = 2, ms = 2, ls = :dash)
+    
+    if z in 1:2
+        plot!(H, exp(-5).*H.^3 , xscale = :log10, yscale=:log10, label = L"riferimento $h^3$", lw = 2, ms = 2, ls = :dash)
+    end
+    display(p)
 end
+
+for z in 1:2
+    p = plot()
+    for i in 0:2
+        x = H
+        y = errors[:, i+1, z+2]
+        inds = y.>0
+        plot!(x[inds], y[inds], xscale = :log10, yscale=:log10, label = "errore, i="*string(i), lw = 2, ms = 2)
+        title!(L"Errore di funzione $z = %$(z+2)$  su quadrato")
+    end
+    plot!(H, H.^2,  xscale = :log10, yscale=:log10, label = "rif 2 ord", lw = 2, ms = 2, ls = :dash)
+    # plot!(H, exp(-5).*H.^3 , xscale = :log10, yscale=:log10, label = "rif 3 ord", lw = 2, ms = 2, ls = :dash)
+    display(p)
+end
+
