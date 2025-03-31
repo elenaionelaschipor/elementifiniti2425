@@ -1,4 +1,5 @@
 # Author: Ivan Bioli (https://github.com/IvanBioli)
+# Inspired by code written by Jochen Hinz (https://github.com/JochenHinz) for MATH-451 @ EPFL
 
 using Gridap
 import Meshes, CairoMakie
@@ -275,4 +276,106 @@ function to_Meshes(T_mat, p_mat)
     # Mesh 
     mesh = Meshes.SimpleMesh(points, connec)
     return mesh
+end
+
+"""
+    mutable struct Mesh
+
+A struct representing a mesh used in the Finite Element method.
+
+# Fields
+- `T::Matrix{TT} where {TT<:Integer}`: A matrix where each column represents the nodes of an element (connectivity matrix).
+- `p::Matrix{Tp} where {Tp<:Real}`: A matrix where each column represents the coordinates of a node.
+- `ak`: A matrix where each column represents the coordinates of the first vertex of each element.
+- `Bk`: A 3D array where each slice represents the Bk matrix of an element.
+- `detBk`: A vector where each entry represents the determinant of the Bk matrix of an element.
+"""
+mutable struct Mesh
+    T::Matrix{TT} where {TT<:Integer}
+    p::Matrix{Tp} where {Tp<:Real}
+    ak
+    Bk
+    detBk
+end
+
+
+"""
+    Mesh(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
+
+Create a Mesh object.
+
+# Arguments
+- `T::Matrix{TT} where {TT<:Integer}`: The connectivity matrix.
+- `p::Matrix{Tp} where {Tp<:Real}`: The point coordinates matrix.
+
+# Returns
+- `mesh::Mesh`: The created mesh object.
+"""
+function Mesh(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
+    return Mesh(T, p, nothing, nothing, nothing)
+end
+
+"""
+    get_ndofs(mesh::Mesh)
+
+Get the number of degrees of freedom (nodes) in the mesh.
+
+# Arguments
+- `mesh::Mesh`: The mesh object.
+
+# Returns
+- `ndofs::Int`: The number of degrees of freedom.
+"""
+function get_ndofs(mesh::Mesh)
+    return size(mesh.p, 2)
+end
+
+"""
+    get_ntri(mesh::Mesh)
+
+Get the number of triangles in the mesh.
+
+# Arguments
+- `mesh::Mesh`: The mesh object.
+
+# Returns
+- `ntri::Int`: The number of triangles.
+"""
+function get_ntri(mesh::Mesh)
+    return size(mesh.T, 2)
+end
+
+"""
+    get_Bk!(mesh::Mesh)
+
+Compute and store the Bk matrices for the mesh.
+
+# Arguments
+- `mesh::Mesh`: The mesh object.
+
+# Returns
+- `Bk::Array{Float64,3}`: The Bk matrices.
+- `ak::Matrix{Float64}`: The ak matrices.
+"""
+function get_Bk!(mesh::Mesh)
+    ######################
+    ### COMPLETARE QUI ###
+    ######################
+end
+
+"""
+    get_detBk!(mesh::Mesh)
+
+Compute and store the determinants of the Bk matrices for the mesh.
+
+# Arguments
+- `mesh::Mesh`: The mesh object.
+
+# Returns
+- `detBk::Vector{Float64}`: The determinants of the Bk matrices.
+"""
+function get_detBk!(mesh::Mesh)
+    ######################
+    ### COMPLETARE QUI ###
+    ######################
 end
