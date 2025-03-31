@@ -295,9 +295,8 @@ mutable struct Mesh
     p::Matrix{Tp} where {Tp<:Real}
     ak
     Bk
-    detBk
+    detbk
 end
-
 
 """
     Mesh(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
@@ -358,10 +357,26 @@ Compute and store the Bk matrices for the mesh.
 - `ak::Matrix{Float64}`: The ak matrices.
 """
 function get_Bk!(mesh::Mesh)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+    if mesh.Bk == nothing
+        Bk = zeros(2, 2*size(T, 2))
+        ak = zeros(2, size(T, 2))
+        for k in 1:size(T, 2)
+            i1, i2, i3 = T[:, k]
+            v1 = p[:, i1]
+            v2 = p[:, i2]
+            v3 = p[:, i3]
+            ak[:, k] = v1
+            Bk[:, (2*k-1):(2*k)] = [v2-v1; v3-v1]
+        end
+        mesh.Bk = Bk
+        mesh.ak = ak
+    end
+    return mesh.Bk, mesh.ak
 end
+
+
+
+
 
 """
     get_detBk!(mesh::Mesh)
@@ -375,7 +390,13 @@ Compute and store the determinants of the Bk matrices for the mesh.
 - `detBk::Vector{Float64}`: The determinants of the Bk matrices.
 """
 function get_detBk!(mesh::Mesh)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+    if mesh.detbk == nothing
+        detBk = zeros(size(T, 2))
+        Bk, _ = get_Bk!(mesh)
+        for k in 1:size(T, 2)
+            detBk[k] = abs(det(Bk[:, k:k+1]))
+        end
+        mesh.detbk = detBk
+    end
+    return mesh.detbk
 end
