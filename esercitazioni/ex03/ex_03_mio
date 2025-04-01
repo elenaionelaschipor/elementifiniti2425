@@ -55,13 +55,13 @@ function Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
     Bk, ak = get_Bk!(mesh)
     detbk = get_detBk!(mesh)
     
-    u_i = zeros(q*size(mesh.T, 2))
+    Q_k = zeros(size(mesh.T, 2))
     for k in 1:size(mesh.T, 2)
-        F_k(x) = Bk[:, (2*k-1):(2*k)]*x + a_k[:, k]
+        F_k = (x) -> Bk[:, (2*k-1):(2*k)].*x + ak[:, k]
         p = F_k(p_cap)
-        u_i(q*(k-1):q*k) = u(p)
+        Q_k[k] = dot(w_cap, u(p))*detbk[k]
     end
-
+    return sum(Q_k)
 end
 
 # Evaluation of a function
@@ -88,6 +88,7 @@ end
 
 
 
+u1 = (x) -> exp(x[1]+x[2])
 
 
 T, p = get_nodes_connectivity("tmp_circle.msh")
@@ -97,3 +98,6 @@ m = Mesh(T, p)
 size(T, 2)
 Bk, ak = get_Bk!(m)
 detbk = get_detBk!(m)
+
+
+Quadrature(u1, m, Q1_ref)
