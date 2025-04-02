@@ -6,7 +6,7 @@ using LaTeXStrings
 using Plots
 using Revise
 includet("C:/Users/elena_/Documents/GitHub/elementifiniti2425/modules/Meshing.jl")
-
+includet("C:/Users/elena_/Documents/GitHub/elementifiniti2425/modules/Quadrature_adv.jl")
 # define functions and exact integrals
 begin 
     u1 = (x) -> exp.(x[1, :]+x[2, :])
@@ -19,72 +19,15 @@ begin
 
     u_n= [u1, u2, u3, u4]
 end 
-# H = LinRange(10^-2, 1, 15)
-struct TriQuad
-    name::String
-    order::Integer
-    points::Matrix
-    weights::Array
-end
 
-Q0_ref = TriQuad("Q0", 1, reshape([1/3; 1/3], 2,1), [0.5] )
-
-Q1_ref = TriQuad("Q1", 1, reshape([0,1,0, 0,0,1], 2, 3), [1/6, 1/6, 1/6])
-
-Q2_ref = TriQuad("Q2", 2, reshape([0, 0.5, 0.5, 0.5, 0, 0.5], 2, 3), [1/6, 1/6, 1/6])
-
-function Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
-    w_cap = ref_quad.weights
-    p_cap = ref_quad.points
-    # println(p_cap)
-    q = size(p_cap, 2)
-    Bk, ak = get_Bk!(mesh)
-    detbk = get_detBk!(mesh)
-    
-    Q_k = zeros(size(mesh.T, 2))
-    for k in 1:size(mesh.T, 2)
-        
-        A = [Bk[:, (2*k-1):(2*k)]*p_cap[:,i] + ak[:, k] for i in 1:size(p_cap,2)]
-        p =  hcat(first.(A), last.(A))'
-        # fix here
-        # p = reshape(F_k(p_cap), 2, size(p_cap, 2))
-        # println(u(p))
-        # println(k, size(w_cap), size(u(p)))
-
-        Q_k[k] = dot(w_cap, u(p))*detbk[k]
-    end
-    return sum(Q_k)
-end
-
-function Quadrature_better(u, mesh::Mesh, ref_quad::TriQuad)
-    w_cap = ref_quad.weights
-    p_cap = ref_quad.points
-    # println(p_cap)
-    # q = size(p_cap, 2)
-    Bk, ak = get_Bk!(mesh)
-    detbk = get_detBk!(mesh)
-    
-    Q_k = zeros(size(mesh.T, 2))
-    A = [[Bk[:, (2*k-1):(2*k)]*p_cap[:,i] + ak[:, k] 
-            for i in 1:size(p_cap,2)] 
-                for k in 1:size(mesh.T, 2)].reshape()
-    for k in 1:size(mesh.T, 2)
-        
-        A = [Bk[:, (2*k-1):(2*k)]*p_cap[:,i] + ak[:, k] for i in 1:size(p_cap,2)]
-        p =  hcat(first.(A), last.(A))'
-        # fix here
-        # p = reshape(F_k(p_cap), 2, size(p_cap, 2))
-        # println(u(p))
-        # println(k, size(w_cap), size(u(p)))
-
-        Q_k[k] = dot(w_cap, u(p))*detbk[k]
-    end
-    return sum(Q_k)
-end
 
 
 # try with one value of h
-begin
+methods = [Q0_ref, Q1_ref, Q2_ref]
+
+
+errors = zeros( 3, 4)
+# begin
     h = 0.7
     mesh_square(h)
     mesh_circle(h)
@@ -92,27 +35,32 @@ begin
     T_circ, p_circ = get_nodes_connectivity("tmp_circle.msh")
     errors = zeros(3, 4)
 
+
+    meshhhh = Mesh(T_sq, p_sq)
+    Quadrature(u1, meshhhh, Q0_ref)
+    Bk, ak = get_Bk!(meshhhh)
+    
     for l in 1:4
         u = u_n[l]
         integrale_esatto = i_es[l]
-        println("cambio funzione -----------------")
+        # println("cambio funzione -----------------")
         if l in 1:2  # square
             mesh_sq = Mesh(T_sq, p_sq)
             for i in 1:3
-                println("cambio quadratura ----------------- ")
+                # println("cambio quadratura ----------------- ")
                 q = Quadrature(u, mesh_sq, methods[i])
                 errors[i, l] = abs(q-integrale_esatto)
             end
         else        # circle
             mesh_circ = Mesh(T_circ,p_circ)
             for i in 1:3  # q0, q1, q2...
-                println("cambio quadratura ----------------- ")
+                # println("cambio quadratura ----------------- ")
                 q = Quadrature(u, mesh_circ, methods[i])
                 errors[i, l] = abs(q-integrale_esatto)
             end
         end
     end
-end
+# end
 
 
 # multiple values of h 
@@ -121,8 +69,8 @@ H = 10 .^ range(-2, 0, length=5)
 
 methods = [Q0_ref, Q1_ref, Q2_ref]
 
-errors = zeros(10, 3, 4)
-for j in 1:10 
+errors = zeros(5, 3, 4)
+for j in 1:5 
     h = H[j]
     mesh_square(h)
     mesh_circle(h)
