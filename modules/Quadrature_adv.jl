@@ -19,23 +19,12 @@ struct TriQuad
     weights::Array
 end
 
-Q0_ref = TriQuad(
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
-)
+Q0_ref = TriQuad("Q0", 1, reshape([1/3; 1/3], 2,1), [0.5] )
 
-Q1_ref = TriQuad(
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
-)
+Q1_ref = TriQuad("Q1", 1, reshape([0,1,0, 0,0,1], 2, 3), [1/6, 1/6, 1/6])
 
-Q2_ref = TriQuad(
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
-)
+Q2_ref = TriQuad("Q2", 2, reshape([0, 0.5, 0.5, 0.5, 0, 0.5], 2, 3), [1/6, 1/6, 1/6])
+
 
 """
     Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
@@ -51,9 +40,28 @@ Perform numerical integration of a function over a mesh using a given quadrature
 - `I_approx::Float64`: The approximate integral of the function over the mesh.
 """
 function Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+    w_cap = ref_quad.weights
+    p_cap = ref_quad.points
+    # println(p_cap)
+    q = size(p_cap, 2)
+    Bk, ak = get_Bk!(mesh)
+    detbk = get_detBk!(mesh)
+    
+    Q_k = zeros(size(mesh.T, 2))
+
+    for k in 1:size(mesh.T, 2)
+        
+        A = [Bk[:, :, k]*p_cap[:,i] + ak[:, k] for i in 1:size(p_cap,2)]
+        p =  hcat(first.(A), last.(A))'
+        println(p)
+        # fix here
+        # p = reshape(F_k(p_cap), 2, size(p_cap, 2))
+        # println(u(p))
+        # println(k, size(w_cap), size(u(p)))
+
+        Q_k[k] = dot(w_cap, u(p))*detbk[k]
+    end
+    return sum(Q_k)
 end
 
 # Evaluation of a function

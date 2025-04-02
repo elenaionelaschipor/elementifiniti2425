@@ -68,9 +68,6 @@ function Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
     return sum(Q_k)
 end
 
-
-Quadrature(u1, m, Q1_ref)
-
 # Evaluation of a function
 """
     eval_u(u::Function, points_elem::Matrix, mesh::Mesh, tri_idx::Integer, quadrule::TriQuad)
@@ -93,18 +90,16 @@ function eval_u(u::Function, points_elem::Matrix, mesh::Mesh, tri_idx::Integer, 
     ######################
 end
 
+# create mesh circle
+begin
+    u1 = (x) -> exp.(x[1, :]+x[2, :])
 
+    T, p = get_nodes_connectivity("tmp_circle.msh")
 
-u1 = (x) -> exp.(x[1, :]+x[2, :])
+    mesh_circ = Mesh(T, p)
 
-
-T, p = get_nodes_connectivity("tmp_circle.msh")
-
-m = Mesh(T, p)
-
-size(T, 2)
-Bk, ak = get_Bk!(m)
-detbk = get_detBk!(m)
-
-
-Quadrature(u1, m, Q1_ref)
+    size(T, 2)
+    Bk, ak = get_Bk!(mesh_circ)
+    detbk = get_detBk!(mesh_circ)
+end
+Quadrature(u1, mesh_circ, Q1_ref)

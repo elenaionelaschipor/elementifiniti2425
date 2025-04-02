@@ -358,15 +358,15 @@ Compute and store the Bk matrices for the mesh.
 """
 function get_Bk!(mesh::Mesh)
     if mesh.Bk == nothing
-        Bk = zeros(2, 2*size(T, 2))
-        ak = zeros(2, size(T, 2))
-        for k in 1:size(T, 2)
-            i1, i2, i3 = T[:, k]
-            v1 = p[:, i1]
-            v2 = p[:, i2]
-            v3 = p[:, i3]
+        Bk = zeros(2, 2, size(mesh.T, 2))
+        ak = zeros(2, size(mesh.T, 2))
+        for k in 1:size(mesh.T, 2)
+            i1, i2, i3 = mesh.T[:, k]
+            v1 = mesh.p[:, i1]
+            v2 = mesh.p[:, i2]
+            v3 = mesh.p[:, i3]
             ak[:, k] = v1
-            Bk[:, (2*k-1):(2*k)] = [v2-v1; v3-v1]
+            Bk[:,:,k] = [v2-v1; v3-v1]
         end
         mesh.Bk = Bk
         mesh.ak = ak
@@ -391,10 +391,11 @@ Compute and store the determinants of the Bk matrices for the mesh.
 """
 function get_detBk!(mesh::Mesh)
     if mesh.detbk == nothing
-        detBk = zeros(size(T, 2))
+        # println(size(mesh.T, 2))
+        detBk = zeros(size(mesh.T, 2))
         Bk, _ = get_Bk!(mesh)
-        for k in 1:size(T, 2)
-            detBk[k] = abs(det(Bk[:, k:k+1]))
+        for k in 1:size(mesh.T, 2)
+            detBk[k] = abs(det(Bk[:, :, k]))
         end
         mesh.detbk = detBk
     end
