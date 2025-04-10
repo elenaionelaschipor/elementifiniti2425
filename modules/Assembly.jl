@@ -55,9 +55,19 @@ Compute the shape functions for the Poisson problem.
 - `shapef`: The shape functions evaluated at the quadrature points.
 """
 @memoize function shapef_2DLFE(quadrule::TriQuad)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+    p = quadrule.points
+    phi_1 = (x) -> - x[1] -x[2] +1
+    phi_2 = (x) -> x[1]
+    phi_3 = (x) -> x[2] 
+    if size(p,1) == 2
+         
+        values = 
+        return values
+    end
+
+
+
+
 end
 
 """

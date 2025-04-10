@@ -53,7 +53,7 @@ function Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
         
         A = [Bk[:, :, k]*p_cap[:,i] + ak[:, k] for i in 1:size(p_cap,2)]
         p =  hcat(first.(A), last.(A))'
-        println(p)
+        # println(p)
         # fix here
         # p = reshape(F_k(p_cap), 2, size(p_cap, 2))
         # println(u(p))
