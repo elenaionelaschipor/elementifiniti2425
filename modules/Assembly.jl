@@ -60,14 +60,14 @@ Compute the shape functions for the Poisson problem.
     phi_2 = (x) -> x[1]
     phi_3 = (x) -> x[2] 
     if size(p,1) == 2
-         
-        values = 
+        # println(size(p))
+        values = zeros(3, size(p,2))
+        for i in 1:size(p,2)
+            println(i)
+            values[:, i] = [phi_1(p[:, i]), phi_2(p[:, i]), phi_3(p[: , i])] 
+        end
         return values
     end
-
-
-
-
 end
 
 """
@@ -82,9 +82,17 @@ Compute the gradients of the shape functions for the Poisson problem.
 - `∇shapef`: The gradients of the shape functions evaluated at the quadrature points.
 """
 @memoize function ∇shapef_2DLFE(quadrule::TriQuad)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+    ∇_phi_1 = (x) ->  [-1; -1]
+    ∇_phi_2 = (x) ->  [1; 0]
+    ∇_phi_3 = (x) ->  [0; 1]
+    p = quadrule.points
+    if size(p,1) == 2
+        gradients = zeros(2,3,size(p,2))
+        for i in 1:size(p, 2)
+            gradients[:, :, i] =  [∇_phi_1(p[:, i]); ∇_phi_2(p[:, i]); ∇_phi_3(p[:, i])]
+        end
+        return gradients
+    end
 end
 
 """
@@ -104,7 +112,19 @@ Assemble the local stiffness matrix and force vector for the Poisson problem.
 - `fe`: The assembled local force vector.
 """
 function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+    
+    B, a = get_Bk!(mesh)
+    detB = get_detBk!(mesh)
+    invB= get_invBk!(mesh)
+    Bk = B[cell_index]
+    ak = a[cell_index]
+    detBk = detB[cell_index]
+    invBk = invB[cell_index]
+            ##################          FINIRE
+    # for i = 1:3
+    #     for j = 1:3
+    #         Ke[i, j] = Ke[i, j] +     
+    #     end 
+    #     fe[i] = fe[i] + 
+    # end 
 end

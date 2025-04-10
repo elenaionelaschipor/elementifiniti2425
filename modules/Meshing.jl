@@ -296,6 +296,7 @@ mutable struct Mesh
     ak
     Bk
     detbk
+    invbK
 end
 
 """
@@ -311,7 +312,7 @@ Create a Mesh object.
 - `mesh::Mesh`: The created mesh object.
 """
 function Mesh(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
-    return Mesh(T, p, nothing, nothing, nothing)
+    return Mesh(T, p, nothing, nothing, nothing, nothing)
 end
 
 """
@@ -413,9 +414,22 @@ Compute and store the inverses of the Bk matrices for the mesh.
 - `invBk::Array{Float64,3}`: The inverses of the Bk matrices.
 """
 function get_invBk!(mesh::Mesh)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+    if mesh.invbK == nothing
+        Bk, _ = get_Bk!(mesh)
+        detBk = get_detBk!(mesh)
+        invbk = zeros(2,2,size(Bk, 3))
+        a = Bk[1, 1, :]
+        b = Bk[1, 2, :]
+        c = Bk[2, 1, :]
+        d = Bk[2, 2, :]
+        invbk[1, 1, :] = d
+        invbk[1, 2, :] = -b
+        invbk[2, 1, :] = -c
+        invbk[2, 2, :] = a
+        invbk = invbk./detBk
+        mesh.invbK = invbk
+    end
+    return mesh.invbK
 end
 
 """
