@@ -120,11 +120,22 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
     ak = a[cell_index]
     detBk = detB[cell_index]
     invBk = invB[cell_index]
-            ##################          FINIRE
-    # for i = 1:3
-    #     for j = 1:3
-    #         Ke[i, j] = Ke[i, j] +     
-    #     end 
-    #     fe[i] = fe[i] + 
-    # end 
+
+    phi_grad = ∇shapef_2DLFE(Q0_ref)
+    phi_val = shapef_2DLFE(Q2_ref)
+    points_Q2 = Q2_ref.points
+    Ke = zeros(3,3)
+    fe = zeros(3)
+    for i = 1:3
+        for j = 1:3
+            K_ij = 0.5 *(Transpose(invBk)*phi_grad[:, :, j]) * (Transpose(invBk)*phi_grad[:, :, i]) * detBk
+            Ke[i, j] = Ke[i, j] + K_ij
+        end 
+        f_cap = (x) -> f(Bk*x+ak)
+        int_part = 0.5/3*(Transpose(invBk)*f_cap(points_Q2[:, i])) * (Transpose(invBk)*phi_val[:,  i]) * detBk
+            
+        fe[i] = fe[i] +  int_part
+         
+    end 
+    return Ke, fe
 end

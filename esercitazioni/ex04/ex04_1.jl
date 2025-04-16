@@ -1,13 +1,13 @@
 # Author: Ivan Bioli (https://github.com/IvanBioli)
 begin
     import Pkg
-    Pkg.activate("elementifinitiunipv_pkg")
+    Pkg.activate("C:/Users/elena_/Documents/GitHub/elementifiniti2425/elementifinitiunipv_pkg")
     using Revise
 
     # Load the necessary files
-    includet("../../modules/Meshing.jl")
-    includet("../../modules/Quadrature_adv.jl")
-    includet("../../modules/Assembly.jl")
+    includet("C:/Users/elena_/Documents/GitHub/elementifiniti2425/modules/Meshing.jl")
+    includet("C:/Users/elena_/Documents/GitHub/elementifiniti2425/modules/Quadrature_adv.jl")
+    includet("C:/Users/elena_/Documents/GitHub/elementifiniti2425/modules/Assembly.jl")
 end
 
 ################### CODE FOR SANITY CHECKS ###################

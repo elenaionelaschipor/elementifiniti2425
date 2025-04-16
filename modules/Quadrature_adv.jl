@@ -1,6 +1,26 @@
 # Author: Ivan Bioli (https://github.com/IvanBioli)
 # Inspired by code written by Jochen Hinz (https://github.com/JochenHinz) for MATH-451 @ EPFL
 
+
+"""
+    triarea(V1, V2, V3)
+
+Calculate the area of a triangle given its vertices.
+
+# Arguments
+- `V1`: The first vertex of the triangle.
+- `V2`: The second vertex of the triangle.
+- `V3`: The third vertex of the triangle.
+
+# Returns
+- `area::Float64`: The area of the triangle.
+"""
+function triarea(V1, V2, V3)
+    area = 0.5 * abs(V1[1] * (V2[2] - V3[2]) + V2[1] * (V3[2] - V1[2]) + V3[1] * (V1[2] - V2[2]))
+    return area
+end
+
+
 """
     struct TriQuad
 

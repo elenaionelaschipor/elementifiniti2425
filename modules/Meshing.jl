@@ -376,9 +376,6 @@ function get_Bk!(mesh::Mesh)
 end
 
 
-
-
-
 """
     get_detBk!(mesh::Mesh)
 
