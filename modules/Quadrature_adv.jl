@@ -65,7 +65,7 @@ function Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
     # println(p_cap)
     q = size(p_cap, 2)
     Bk, ak = get_Bk!(mesh)
-    detbk = get_detBk!(mesh)
+    detBk = get_detBk!(mesh)
     
     Q_k = zeros(size(mesh.T, 2))
 
@@ -79,7 +79,7 @@ function Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
         # println(u(p))
         # println(k, size(w_cap), size(u(p)))
 
-        Q_k[k] = dot(w_cap, u(p))*detbk[k]
+        Q_k[k] = dot(w_cap, u(p))*detBk[k]
     end
     return sum(Q_k)
 end

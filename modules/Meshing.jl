@@ -295,12 +295,12 @@ mutable struct Mesh
     p::Matrix{Tp} where {Tp<:Real}
     ak
     Bk
-    detbk
-    invbK
+    detBk
+    invBk
 end
 
 """
-    Mesh(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
+    Mesh_constructor(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
 
 Create a Mesh object.
 
@@ -311,7 +311,7 @@ Create a Mesh object.
 # Returns
 - `mesh::Mesh`: The created mesh object.
 """
-function Mesh(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
+function Mesh_constructor(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
     return Mesh(T, p, nothing, nothing, nothing, nothing)
 end
 
@@ -388,17 +388,17 @@ Compute and store the determinants of the Bk matrices for the mesh.
 - `detBk::Vector{Float64}`: The determinants of the Bk matrices.
 """
 function get_detBk!(mesh::Mesh)
-    if mesh.detbk == nothing
+    if mesh.detBk == nothing
         # println(size(mesh.T, 2))
         detBk = zeros(size(mesh.T, 2))
         Bk, _ = get_Bk!(mesh)
         for k in 1:size(mesh.T, 2)
             detBk[k] = abs(det(Bk[:, :, k]))
         end
-        mesh.detbk = detBk
+        mesh.detBk = detBk
     end
-    return mesh.detbk
-
+    return mesh.detBk
+end
 """
     get_invBk!(mesh::Mesh)
 
@@ -411,22 +411,31 @@ Compute and store the inverses of the Bk matrices for the mesh.
 - `invBk::Array{Float64,3}`: The inverses of the Bk matrices.
 """
 function get_invBk!(mesh::Mesh)
-    if mesh.invbK == nothing
+    if mesh.invBk == nothing
         Bk, _ = get_Bk!(mesh)
         detBk = get_detBk!(mesh)
-        invbk = zeros(2,2,size(Bk, 3))
+        invBk = zeros(2,2,size(Bk, 3))
         a = Bk[1, 1, :]
         b = Bk[1, 2, :]
         c = Bk[2, 1, :]
         d = Bk[2, 2, :]
-        invbk[1, 1, :] = d
-        invbk[1, 2, :] = -b
-        invbk[2, 1, :] = -c
-        invbk[2, 2, :] = a
-        invbk = invbk./detBk
-        mesh.invbK = invbk
+        invBk[1, 1, :] = d
+        invBk[1, 2, :] = -b
+        invBk[2, 1, :] = -c
+        invBk[2, 2, :] = a
+        # println("shapes: a: $(size(a))")
+        # println("shapes: b: $(size(b))")
+        # println("shapes: c: $(size(c))")
+        # println("shapes: d: $(size(d))")
+        # println("shapes: invBk: $(size(invBk))")
+        # println("shapes: detBk: $(size(detBk))")
+        
+        for k in 1:size(a, 1)
+            invBk[:, :, k] = invBk[:, :, k]./detBk[k] 
+        end
+        mesh.invBk = invBk
     end
-    return mesh.invbK
+    return mesh.invBk
 end
 
 """
@@ -513,5 +522,4 @@ function plot_surf(msh::Mesh, uh::Vector; plot_msh::Bool=true)
     # Plot the data
     plt = PlotlyJS.plot(toplot)
     return plt
-end
 end

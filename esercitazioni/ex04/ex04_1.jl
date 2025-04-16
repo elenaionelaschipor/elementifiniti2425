@@ -16,7 +16,7 @@ begin
     h = 0.1
     out_file = mesh_circle(h)
     T, p = get_nodes_connectivity(out_file)
-    msh = Mesh(T, p)
+    msh = Mesh_constructor(T, p)
     f(x) = x[1]
 end
 
@@ -24,6 +24,7 @@ end
 begin
     initialize_assembly!(msh)
     local_assembler(Ke, fe, msh, cell_index) = poisson_assemble_local!(Ke, fe, msh, cell_index, f)
+    # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
     A, b = assemble_global(msh, local_assembler)
 end
 

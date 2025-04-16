@@ -33,9 +33,38 @@ Assemble the global stiffness matrix and force vector for the given mesh using t
 - `f::Vector`: The global force vector.
 """
 function assemble_global(mesh::Mesh, local_assembler!)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+
+    T = mesh.T
+    p = mesh.p
+    n_points = size(p,2)
+    # A_glob = zeros(n_points, n_points)
+    # F_glob = zeros(n_points)
+
+
+    rows = []
+    cols = []
+    data = []
+    rows_f = []
+    data_f = []
+    for k in 1:n_points
+        A_loc, f_loc = local_assembler!(zeros(3,3), zeros(3), mesh, k) 
+        indices = T[:, k]
+        for i in 1:3
+            i_glob = indices[i]
+            for j in 1:3
+                j_glob = indices[j]
+                append!(rows, i_glob)
+                append!(cols, j_glob)
+                append!(data, A_loc[i,j])
+            end
+            append!(rows_f, i_glob)
+            append!(data_f, f_loc[i])
+        end    
+    end
+    A_glob = sparse(rows, cols, data)
+    F_glob = sparse(rows_f, ones(size(rows_f)), data_f)
+    return A_glob, F_glob
+
 end
 
 ########################################################################
@@ -112,7 +141,6 @@ Assemble the local stiffness matrix and force vector for the Poisson problem.
 - `fe`: The assembled local force vector.
 """
 function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f)
-    
     B, a = get_Bk!(mesh)
     detB = get_detBk!(mesh)
     invB= get_invBk!(mesh)
@@ -128,11 +156,16 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
     fe = zeros(3)
     for i = 1:3
         for j = 1:3
-            K_ij = 0.5 *(Transpose(invBk)*phi_grad[:, :, j]) * (Transpose(invBk)*phi_grad[:, :, i]) * detBk
+            println(phi_grad[:,:,j])
+            println(invBk')
+            println(0.5 *(transpose(invBk)*phi_grad[:, :, j]))
+            T
+            K_ij = 0.5 *(transpose(invBk)*phi_grad[:, :, j]) * (transpose(invBk)*phi_grad[:, :, i]) * detBk
+            
             Ke[i, j] = Ke[i, j] + K_ij
         end 
         f_cap = (x) -> f(Bk*x+ak)
-        int_part = 0.5/3*(Transpose(invBk)*f_cap(points_Q2[:, i])) * (Transpose(invBk)*phi_val[:,  i]) * detBk
+        int_part = 0.5/3*(transpose(invBk)*f_cap(points_Q2[:, i])) * (transpose(invBk)*phi_val[:,  i]) * detBk
             
         fe[i] = fe[i] +  int_part
          
