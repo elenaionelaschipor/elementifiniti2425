@@ -423,15 +423,8 @@ function get_invBk!(mesh::Mesh)
         invBk[1, 2, :] = -b
         invBk[2, 1, :] = -c
         invBk[2, 2, :] = a
-        # println("shapes: a: $(size(a))")
-        # println("shapes: b: $(size(b))")
-        # println("shapes: c: $(size(c))")
-        # println("shapes: d: $(size(d))")
-        # println("shapes: invBk: $(size(invBk))")
-        # println("shapes: detBk: $(size(detBk))")
-        
         for k in 1:size(a, 1)
-            invBk[:, :, k] = invBk[:, :, k]./detBk[k] 
+            invBk[:, :, k] = invBk[:, :, k]/detBk[k] 
         end
         mesh.invBk = invBk
     end

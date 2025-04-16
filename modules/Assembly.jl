@@ -37,17 +37,15 @@ function assemble_global(mesh::Mesh, local_assembler!)
     T = mesh.T
     p = mesh.p
     n_points = size(p,2)
-    # A_glob = zeros(n_points, n_points)
-    # F_glob = zeros(n_points)
-
-
     rows = []
     cols = []
-    data = []
+    data = Float64[]
     rows_f = []
-    data_f = []
+    data_f = Float64[]
+    A_loc = zeros(3,3)
+    f_loc = zeros(3)
     for k in 1:n_points
-        A_loc, f_loc = local_assembler!(zeros(3,3), zeros(3), mesh, k) 
+        local_assembler!(A_loc, f_loc, mesh, k) 
         indices = T[:, k]
         for i in 1:3
             i_glob = indices[i]
@@ -61,7 +59,7 @@ function assemble_global(mesh::Mesh, local_assembler!)
             append!(data_f, f_loc[i])
         end    
     end
-    A_glob = sparse(rows, cols, data)
+    A_glob = sparse(rows, cols, data, n_points, n_points)
     F_glob = sparse(rows_f, ones(size(rows_f)), data_f)
     return A_glob, F_glob
 
@@ -92,7 +90,7 @@ Compute the shape functions for the Poisson problem.
         # println(size(p))
         values = zeros(3, size(p,2))
         for i in 1:size(p,2)
-            println(i)
+            # println(i)
             values[:, i] = [phi_1(p[:, i]), phi_2(p[:, i]), phi_3(p[: , i])] 
         end
         return values
@@ -118,7 +116,7 @@ Compute the gradients of the shape functions for the Poisson problem.
     if size(p,1) == 2
         gradients = zeros(2,3,size(p,2))
         for i in 1:size(p, 2)
-            gradients[:, :, i] =  [∇_phi_1(p[:, i]); ∇_phi_2(p[:, i]); ∇_phi_3(p[:, i])]
+            gradients[:, :, i] =  [∇_phi_1(p[:, i]),  ∇_phi_2(p[:, i]), ∇_phi_3(p[:, i])]
         end
         return gradients
     end
@@ -144,29 +142,31 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
     B, a = get_Bk!(mesh)
     detB = get_detBk!(mesh)
     invB= get_invBk!(mesh)
-    Bk = B[cell_index]
-    ak = a[cell_index]
+    Bk = B[:, :, cell_index]
+    ak = a[:, cell_index]
     detBk = detB[cell_index]
     invBk = invB[cell_index]
 
     phi_grad = ∇shapef_2DLFE(Q0_ref)
+    # println(phi_grad)
     phi_val = shapef_2DLFE(Q2_ref)
     points_Q2 = Q2_ref.points
     Ke = zeros(3,3)
     fe = zeros(3)
     for i = 1:3
         for j = 1:3
-            println(phi_grad[:,:,j])
-            println(invBk')
-            println(0.5 *(transpose(invBk)*phi_grad[:, :, j]))
-            T
-            K_ij = 0.5 *(transpose(invBk)*phi_grad[:, :, j]) * (transpose(invBk)*phi_grad[:, :, i]) * detBk
-            
-            Ke[i, j] = Ke[i, j] + K_ij
+            # quadratura Q0
+            K_ij = 0.5 *dot((transpose(invBk)*phi_grad[:, j, :]), (transpose(invBk)*phi_grad[:, i, :])) * detBk
+            Ke[i, j] =  K_ij
         end 
         f_cap = (x) -> f(Bk*x+ak)
-        int_part = 0.5/3*(transpose(invBk)*f_cap(points_Q2[:, i])) * (transpose(invBk)*phi_val[:,  i]) * detBk
-            
+
+        # quadratura Q2
+        int_part = 0
+        for l in size(points_Q2, 2)
+            int_part += 0.5/3 *f_cap(points_Q2[:, l])*phi_val[i,  l] * detBk
+        end
+        # println(int_part)
         fe[i] = fe[i] +  int_part
          
     end 

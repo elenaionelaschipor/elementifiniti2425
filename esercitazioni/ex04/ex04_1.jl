@@ -48,6 +48,9 @@ begin
     b_gridap = get_vector(op)  # Assembles the load vector
 end
 
+
+
+
 # Check that the errors are small
 begin
     println("Relative error on A:\t $(norm(A - A_gridap) / norm(A_gridap))")
