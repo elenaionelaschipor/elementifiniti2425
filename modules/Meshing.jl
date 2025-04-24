@@ -289,6 +289,7 @@ A struct representing a mesh used in the Finite Element method.
 - `ak`: A matrix where each column represents the coordinates of the first vertex of each element.
 - `Bk`: A 3D array where each slice represents the Bk matrix of an element.
 - `detBk`: A vector where each entry represents the determinant of the Bk matrix of an element.
+- `invBk`: A 3D array where each slice represents the inverse of the Bk matrix of an element.
 """
 mutable struct Mesh
     T::Matrix{TT} where {TT<:Integer}
@@ -311,6 +312,7 @@ Create a Mesh object.
 # Returns
 - `mesh::Mesh`: The created mesh object.
 """
+
 function Mesh_constructor(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
     return Mesh(T, p, nothing, nothing, nothing, nothing)
 end
@@ -358,7 +360,7 @@ Compute and store the Bk matrices for the mesh.
 - `ak::Matrix{Float64}`: The ak matrices.
 """
 function get_Bk!(mesh::Mesh)
-    if mesh.Bk == nothing
+    if isnothing(mesh.Bk)
         Bk = zeros(2, 2, size(mesh.T, 2))
         ak = zeros(2, size(mesh.T, 2))
         for k in 1:size(mesh.T, 2)
@@ -371,6 +373,18 @@ function get_Bk!(mesh::Mesh)
         end
         mesh.Bk = Bk
         mesh.ak = ak
+    end
+    return mesh.Bk, mesh.ak
+end
+
+function get_Bk_sol!(mesh::Mesh)
+    if isnothing(mesh.Bk)
+        print("Computing Bk...")
+        ak, bk, ck = mesh.p[:, mesh.T[1, :]], mesh.p[:, mesh.T[2, :]], mesh.p[:, mesh.T[3, :]]
+        Bk = permutedims([bk - ak;;; ck - ak], [1, 3, 2])
+        mesh.Bk = Bk
+        mesh.ak = ak
+        print("done\n")
     end
     return mesh.Bk, mesh.ak
 end
@@ -388,9 +402,9 @@ Compute and store the determinants of the Bk matrices for the mesh.
 - `detBk::Vector{Float64}`: The determinants of the Bk matrices.
 """
 function get_detBk!(mesh::Mesh)
-    if mesh.detBk == nothing
+    if isnothing(mesh.detBk)
         # println(size(mesh.T, 2))
-        detBk = zeros(size(mesh.T, 2))
+        detBk = zeros(Float64, size(mesh.T, 2))
         Bk, _ = get_Bk!(mesh)
         for k in 1:size(mesh.T, 2)
             detBk[k] = abs(det(Bk[:, :, k]))
@@ -411,20 +425,12 @@ Compute and store the inverses of the Bk matrices for the mesh.
 - `invBk::Array{Float64,3}`: The inverses of the Bk matrices.
 """
 function get_invBk!(mesh::Mesh)
-    if mesh.invBk == nothing
+    if isnothing(mesh.invBk)
         Bk, _ = get_Bk!(mesh)
         detBk = get_detBk!(mesh)
-        invBk = zeros(2,2,size(Bk, 3))
-        a = Bk[1, 1, :]
-        b = Bk[1, 2, :]
-        c = Bk[2, 1, :]
-        d = Bk[2, 2, :]
-        invBk[1, 1, :] = d
-        invBk[1, 2, :] = -b
-        invBk[2, 1, :] = -c
-        invBk[2, 2, :] = a
-        for k in 1:size(a, 1)
-            invBk[:, :, k] = invBk[:, :, k]/detBk[k] 
+        invBk = zeros(Float64, 2,2,size(Bk, 3))
+        for k in 1:size(Bk, 3)
+            invBk[:, :, k] = inv(Bk[:, :, k]) 
         end
         mesh.invBk = invBk
     end
