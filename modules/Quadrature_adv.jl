@@ -78,44 +78,32 @@ function Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
         # p = reshape(F_k(p_cap), 2, size(p_cap, 2))
         # println(u(p))
         # println(k, size(w_cap), size(u(p)))
-
         Q_k[k] = dot(w_cap, u(p))*detBk[k]
-        if k < 40
-            # println("Mia quadratura: primi valori")
-            # println(Q_k[k])
-            println("MIO")
-            println(u(p))
-            
-        end
     
     end
     return sum(Q_k)
 end
 
-function Quadrature_soluzione(u, mesh::Mesh, ref_quad::TriQuad)
-    # Compute matrices for pushforward of reference element
-    Bk, ak = get_Bk!(mesh)
-    # Compute the absolute value of the determinant
-    detBk = get_detBk!(mesh)
-    # Get quadrature points and weights on the reference element
-    points_refelem, weights_refelem = ref_quad.points, ref_quad.weights
-    points_elem = zeros(Float64, size(points_refelem))
-    u_evals = zeros(Float64, size(weights_refelem))
+# function Quadrature_soluzione(u, mesh::Mesh, ref_quad::TriQuad)
+#     # Compute matrices for pushforward of reference element
+#     Bk, ak = get_Bk!(mesh)
+#     # Compute the absolute value of the determinant
+#     detBk = get_detBk!(mesh)
+#     # Get quadrature points and weights on the reference element
+#     points_refelem, weights_refelem = ref_quad.points, ref_quad.weights
+#     points_elem = zeros(Float64, size(points_refelem))
+#     u_evals = zeros(Float64, size(weights_refelem))
     
-    # Loop across all elements
-    n_tri = size(mesh.T, 2)
-    I_approx::Float64 = 0
-    for i = 1:n_tri
-        points_elem = Bk[:, :, i] * points_refelem .+ ak[:, i] # Points in the current element
-        u_evals = eval_u(u, points_elem, mesh, i, ref_quad)
-        if i < 40
-            println("SOLUZIONE")
-            println(u_evals)
-        end
-        I_approx += sum(u_evals .* weights_refelem) * detBk[i]
-    end
-    return I_approx
-end
+#     # Loop across all elements
+#     n_tri = size(mesh.T, 2)
+#     I_approx::Float64 = 0
+#     for i = 1:n_tri
+#         points_elem = Bk[:, :, i] * points_refelem .+ ak[:, i] # Points in the current element
+#         u_evals = eval_u(u, points_elem, mesh, i, ref_quad)
+#         I_approx += sum(u_evals .* weights_refelem) * detBk[i]
+#     end
+#     return I_approx
+# end
 
 # Evaluation of a function
 """

@@ -131,19 +131,6 @@ Compute the shape functions for the Poisson problem.
     end
 end
 
-@memoize function shapef_2DLFE_sol(quadrule::TriQuad)
-    # Get quadrature points
-    points = quadrule.points
-    x, y = reshape(points[1, :], 1, :), reshape(points[2, :], 1, :)
-
-    # points = [x; y], with shape (2, n)
-    # The basis functions are:
-    #   f1(x,y) = 1 - x - y     f2(x,y) = x     f3(x,y) = y
-    # Hence we construct a (3, n) matrix shapef = [f1; f2; f3]
-    shapef = [1 .- x .- y; x; y]
-    return shapef
-end
-
 """
     ∇shapef_2DLFE(quadrule::TriQuad)
 
@@ -162,26 +149,13 @@ Compute the gradients of the shape functions for the Poisson problem.
     p = quadrule.points
     if size(p,1) == 2
         gradients = zeros(2,3,size(p,2))
+        # println([∇_phi_1(p[:, 1])  ∇_phi_2(p[:, 1])  ∇_phi_3(p[:, 1])])
+        # println(gradients)
         for i in 1:size(p, 2)
-            gradients[:, :, i] =  [∇_phi_1(p[:, i]),  ∇_phi_2(p[:, i]), ∇_phi_3(p[:, i])]
+            gradients[:, :, i] =  [∇_phi_1(p[:, i])  ∇_phi_2(p[:, i]) ∇_phi_3(p[:, i])]
         end
         return gradients
     end
-end
-
-@memoize function ∇shapef_2DLFE_sol(quadrule::TriQuad)
-    # Get quadrature points
-    n = size(quadrule.points, 2)
-    # points = [x; y], with shape (2, n)
-    # The basis functions are:
-    #   f1(x,y) = 1 - x - y     f2(x,y) = x          f3(x,y) = y
-    # Hence the gradients are
-    #   ∇f1(x,y) = [-1;-1]       ∇f2(x,y) = [1;0]     ∇f3(x,y) = [0;1]
-    # Hence we construct a (2, 3, n) matrix obtained repeating n times
-    # the matrix [-1 1 0;
-    #             -1 0 1]
-    ∇shapef = repeat([-1.0 1.0 0.0; -1.0 0.0 1.0], 1, 1, n)
-    return ∇shapef
 end
 
 """
@@ -209,24 +183,44 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
     detBk = detB[cell_index]
     invBk = invB[cell_index]
 
-    phi_grad = ∇shapef_2DLFE(Q0_ref)
+
+    quadr_matrix = Q2_ref
+    phi_grad = ∇shapef_2DLFE(quadr_matrix)
     # println(phi_grad)
-    phi_val = shapef_2DLFE(Q2_ref)
-    points_Q2 = Q2_ref.points
-    Ke = zeros(3,3)
-    fe = zeros(3)
+    quadr_vect = Q2_ref
+    phi_val_vector = shapef_2DLFE(quadr_vect)
+    points_vector = quadr_vect.points
+
+    fill!(Ke, 0)
+    fill!(fe, 0)
+
+    weights_vector = quadr_vect.weights
+    weights_matrix = quadr_matrix.weights
+
+    println(weights_matrix, detBk)
     for i = 1:3
         for j = 1:3
             # quadratura Q0
-            K_ij = 0.5 *dot((transpose(invBk)*phi_grad[:, j, :]), (transpose(invBk)*phi_grad[:, i, :])) * detBk
-            Ke[i, j] =  K_ij
+            # trasposta di invBk per gradiente della iesima phi in TUTTI i punti
+            # quindi contiene ... nel primo, ... nel secondo e poi nel terzo
+            bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
+            bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
+            println(bktm1_∇phi_i)
+            println(bktm1_∇phi_j)
+            for s in 1:size(quadr_matrix.points, 2) 
+                # println("i=", i, "j=",j, "s=", s)
+                # println(weights_matrix[s]*dot(bktm1_∇phi_i[:, s], bktm1_∇phi_j[:, s])*detBk)
+                println(bktm1_∇phi_i[:, s], bktm1_∇phi_j[:, s], detBk*weights_matrix[s] ) 
+                Ke[i, j] += bktm1_∇phi_i[:, s] ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s]    
+            end
         end 
+        
         f_cap = (x) -> f(Bk*x+ak)
 
         # quadratura Q2
         int_part = 0
-        for l in size(points_Q2, 2)
-            int_part += 0.5/3 *f_cap(points_Q2[:, l])*phi_val[i,  l] * detBk
+        for l in 1:size(points_vector, 2)
+            int_part += weights_vector[l]*f_cap(points_vector[:, l])*phi_val_vector[i,  l] * detBk
         end
         # println(int_part)
         fe[i] = fe[i] +  int_part
@@ -243,10 +237,12 @@ function poisson_assemble_local_sol!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_in
     # but here we show how to use a more general quadrature rule like Q2
     quadrule = Q2_ref
     points_e = mesh.Bk[:, :, cell_index] * quadrule.points .+ mesh.ak[:, cell_index]
+    
     # Evaluate basis functions and their gradient
     shapef = shapef_2DLFE(quadrule)
     invBk = mesh.invBk[:, :, cell_index]
     ∇shapef = mapslices(x -> invBk' * x, ∇shapef_2DLFE(quadrule), dims=(1, 2))
+    # println(∇shapef)
     # Loop over quadrature points
     for (q_index, q_point) in enumerate(eachcol(points_e))
         # Get the quadrature weight
@@ -261,6 +257,7 @@ function poisson_assemble_local_sol!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_in
             for j in 1:n_basefuncs
                 ∇u = ∇shapef[:, j, q_index]
                 # Add contribution to Ke
+                println(∇v,  ∇u,  dΩ)
                 Ke[i, j] += (∇v ⋅ ∇u) * dΩ
             end
         end

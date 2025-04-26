@@ -377,18 +377,6 @@ function get_Bk!(mesh::Mesh)
     return mesh.Bk, mesh.ak
 end
 
-function get_Bk_sol!(mesh::Mesh)
-    if isnothing(mesh.Bk)
-        print("Computing Bk...")
-        ak, bk, ck = mesh.p[:, mesh.T[1, :]], mesh.p[:, mesh.T[2, :]], mesh.p[:, mesh.T[3, :]]
-        Bk = permutedims([bk - ak;;; ck - ak], [1, 3, 2])
-        mesh.Bk = Bk
-        mesh.ak = ak
-        print("done\n")
-    end
-    return mesh.Bk, mesh.ak
-end
-
 
 """
     get_detBk!(mesh::Mesh)
