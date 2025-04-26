@@ -36,16 +36,20 @@ function assemble_global(mesh::Mesh, local_assembler!)
     T = mesh.T
     p = mesh.p
     n_points = size(p,2)
+    n_triangles = size(T, 2)
     rows = []
     cols = []
     data = Float64[]
+    
     rows_f = []
     data_f = Float64[]
+
     A_loc = zeros(3,3)
     f_loc = zeros(3)
-    for k in 1:n_points
+    for k in 1:n_triangles
         local_assembler!(A_loc, f_loc, mesh, k) 
         indices = T[:, k]
+    
         for i in 1:3
             i_glob = indices[i]
             for j in 1:3
@@ -61,42 +65,6 @@ function assemble_global(mesh::Mesh, local_assembler!)
     A_glob = sparse(rows, cols, data, n_points, n_points)
     F_glob = sparse(rows_f, ones(size(rows_f)), data_f)
     return A_glob, F_glob
-end
-
-function assemble_global_sol(mesh::Mesh, local_assembler!)
-    # Get number of dofs, triangles and basis functions
-    n_basefuncs = 3
-    n_dofs = get_ndofs(mesh)
-    n_tri = get_ntri(mesh)
-    # Allocate the element stiffness matrix and element force vector
-    Ke = zeros(n_basefuncs, n_basefuncs)
-    fe = zeros(n_basefuncs)
-    # Allocate global force vector f
-    f = zeros(n_dofs)
-    # Allocate entries for assembling the global matrix as a sparse matrix
-    I = zeros(9 * n_tri) # Row indices
-    J = zeros(9 * n_tri) # Col indices
-    K = zeros(9 * n_tri) # Entries
-    loc = 1:9 # Current entries of I, J and A to be modified
-    # Loop over all triangles
-    for cell_index in 1:n_tri
-        # Assemble the local matrices
-        local_assembler!(Ke, fe, mesh, cell_index)
-        # Get the local-to-global indices
-        triangle = mesh.T[:, cell_index]
-        # Add the local contribution to the global force vector
-        f[triangle] += fe
-        # Add the local contribution to the vectors of the assembly of the global stiffness matrix
-        irows = repeat(triangle, 1, 3)
-        icols = irows'
-        I[loc] = reshape(irows, 9)
-        J[loc] = reshape(icols, 9)
-        K[loc] = reshape(Ke, 9)
-        loc = loc .+ 9
-    end
-    # Assemble K as a sparse matrix
-    K = sparse(I, J, K, n_dofs, n_dofs)
-    return K, f
 end
 
 ########################################################################
@@ -181,12 +149,12 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
     Bk = B[:, :, cell_index]
     ak = a[:, cell_index]
     detBk = detB[cell_index]
-    invBk = invB[cell_index]
+    invBk = invB[:, :, cell_index]
 
 
     quadr_matrix = Q2_ref
     phi_grad = ∇shapef_2DLFE(quadr_matrix)
-    # println(phi_grad)
+    
     quadr_vect = Q2_ref
     phi_val_vector = shapef_2DLFE(quadr_vect)
     points_vector = quadr_vect.points
@@ -197,70 +165,21 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
     weights_vector = quadr_vect.weights
     weights_matrix = quadr_matrix.weights
 
-    println(weights_matrix, detBk)
     for i = 1:3
         for j = 1:3
-            # quadratura Q0
             # trasposta di invBk per gradiente della iesima phi in TUTTI i punti
             # quindi contiene ... nel primo, ... nel secondo e poi nel terzo
             bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
             bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
-            println(bktm1_∇phi_i)
-            println(bktm1_∇phi_j)
             for s in 1:size(quadr_matrix.points, 2) 
-                # println("i=", i, "j=",j, "s=", s)
-                # println(weights_matrix[s]*dot(bktm1_∇phi_i[:, s], bktm1_∇phi_j[:, s])*detBk)
-                println(bktm1_∇phi_i[:, s], bktm1_∇phi_j[:, s], detBk*weights_matrix[s] ) 
                 Ke[i, j] += bktm1_∇phi_i[:, s] ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s]    
             end
         end 
-        
         f_cap = (x) -> f(Bk*x+ak)
-
         # quadratura Q2
-        int_part = 0
         for l in 1:size(points_vector, 2)
-            int_part += weights_vector[l]*f_cap(points_vector[:, l])*phi_val_vector[i,  l] * detBk
+            fe[i] += weights_vector[l]*f_cap(points_vector[:, l])*phi_val_vector[i,  l] * detBk
         end
-        # println(int_part)
-        fe[i] = fe[i] +  int_part
-         
     end 
-    return Ke, fe
-end
-function poisson_assemble_local_sol!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f)
-    n_basefuncs = 3
-    # Reset to 0
-    fill!(Ke, 0)
-    fill!(fe, 0)
-    # FIXME: It is sufficient to use Q0 quadrule to assemble the stiffness matrix exactly,
-    # but here we show how to use a more general quadrature rule like Q2
-    quadrule = Q2_ref
-    points_e = mesh.Bk[:, :, cell_index] * quadrule.points .+ mesh.ak[:, cell_index]
-    
-    # Evaluate basis functions and their gradient
-    shapef = shapef_2DLFE(quadrule)
-    invBk = mesh.invBk[:, :, cell_index]
-    ∇shapef = mapslices(x -> invBk' * x, ∇shapef_2DLFE(quadrule), dims=(1, 2))
-    # println(∇shapef)
-    # Loop over quadrature points
-    for (q_index, q_point) in enumerate(eachcol(points_e))
-        # Get the quadrature weight
-        dΩ = quadrule.weights[q_index] * mesh.detBk[cell_index]
-        # Loop over test shape functions
-        for i in 1:n_basefuncs
-            v = shapef[i, q_index]
-            ∇v = ∇shapef[:, i, q_index]
-            # Add contribution to fe
-            fe[i] += f(q_point) * v * dΩ
-            # Loop over trial shape functions
-            for j in 1:n_basefuncs
-                ∇u = ∇shapef[:, j, q_index]
-                # Add contribution to Ke
-                println(∇v,  ∇u,  dΩ)
-                Ke[i, j] += (∇v ⋅ ∇u) * dΩ
-            end
-        end
-    end
     return Ke, fe
 end

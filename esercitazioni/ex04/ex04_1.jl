@@ -13,7 +13,7 @@ end
 ################### CODE FOR SANITY CHECKS ###################
 # Common data
 begin
-    h = 0.1
+    h = 0.05
     out_file = mesh_circle(h)
     T, p = get_nodes_connectivity(out_file)
     msh = Mesh_constructor(T, p)
@@ -47,8 +47,6 @@ begin
     A_gridap = get_matrix(op)  # Assembles the stiffness matrix
     b_gridap = get_vector(op)  # Assembles the load vector
 end
-
-
 
 
 # Check that the errors are small
