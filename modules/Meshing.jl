@@ -318,7 +318,7 @@ Create a Mesh object.
 """
 
 function Mesh_constructor(T::Matrix{TT} where {TT<:Integer}, p::Matrix{Tp} where {Tp<:Real})
-    return Mesh(T, p, nothing, nothing, nothing, nothing)
+    return Mesh(T, p, nothing, nothing, nothing, nothing, nothing, nothing)
 end
 
 """
