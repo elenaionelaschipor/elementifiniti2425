@@ -161,9 +161,35 @@ Compute the L2 error between a function and a finite element solution over a mes
 - `L2_error::Float64`: The L2 error between the exact solution and the finite element solution.
 """
 function L2error(u::Function, uh::Vector, mesh::Mesh, ref_quad::TriQuad)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+    T = mesh.T
+    n_tri = size(T,2)
+    p = mesh.p
+
+    Bk, ak = get_Bk!(mesh)
+    detBk = get_detBk!(mesh)
+    w_cap = ref_quad.weights
+    phi = shapef_2DLFE(ref_quad)
+    # l'integranda è (u - uh)^2
+    points_quad = ref_quad.points
+    integral = 0
+    
+    for k in 1:n_tri
+        d = detBk[k]
+        triangle = T[:, k]
+        points_for_u_ex = Bk[:, :, k]*points_quad .+ ak[:, k]
+        # println(points_for_u_ex)
+        uh_p = transpose(uh[triangle])*phi  # ottengo i valori di u calcolati nei punti di quadratura, e li sommo
+
+        # println(d*transpose(w_cap)*(u(points_for_u_ex) .- uh_p[:]).^2)
+
+        integral += d*transpose(w_cap)*(u(points_for_u_ex) .- uh_p[:]).^2
+            
+        
+    end
+
+
+    return sqrt(integral)
+
 end
 
 """

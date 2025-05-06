@@ -67,21 +67,78 @@ begin
 
 end
 
+# norma L2
+begin
+    quadratura = Q0_ref
+    L2error(u_ex,u_h,msh,quadratura)
+    
+end
 
 begin
-    u_ex = (x) -> 0.25*(1-x[1].^2 - x[2].^2)
-    quadrature = Q0_ref
-    err = 0
-    for k in 1:n_tri
-        Vs = [p[:, T[:, 1]][:, i] for i in 1:3]
-        bt = sum(Vs)/3
+    errs_norminf = []
+    errs_norml2 = []
+    # controllo norma infinito al variare di h
+    for N in 1:50
+        h = 1/N
+        out_file = mesh_circle(h)
+        T, p = get_nodes_connectivity(out_file)
+        msh = Mesh_constructor(T, p)
+
+        boundary_tags, boundary_coords = get_boundary_nodes(out_file)
+        set_dirichletdofs!(msh, boundary_tags)
         
-        u_h_b_t = 1/3 * sum(u_h[T[:, k]])
-        err += (u_h_b_t - u_ex(bt))^2 /triarea(Vs[1], Vs[2], Vs[3])
+        initialize_assembly!(msh)
+        local_assembler(Ke, fe, msh, cell_index) = poisson_assemble_local!(Ke, fe, msh, cell_index, f)
+        # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
+        A, b = assemble_global(msh, local_assembler)
+        D = boundary_tags
+        n_points = size(p, 2)
+        n_tri = size(T, 2)
+        N = [i for i in 1:n_points]
+        F = filter((x) -> !(x in D), N)
+        A_cond = A[F, F]
+        b_cond = Vector(b[F])
+        uF = A_cond\b_cond
+        uD = zeros(size(D)[1])
+        u_h = zeros(n_points)
+        u_h[F] = uF
+        u_h[D] = uD
+        u_ex = (x) -> 0.25*(1 .- x[1, :].^2 .- x[2, :].^2)
+        u_ex_on_points = u_ex(p)   
+
+        append!(errs_norminf, maximum(abs.(u_ex_on_points .- u_h)))
+        
+        append!(errs_norml2, L2error(u_ex,u_h,msh,quadratura))
     end
-    err = sqrt(err)
+end
+
+
+# plotting
+
+begin
+    plot(1:50, errs_norml2, label = "errore al variare di h = 1/N" , yscale=:log10, xscale =:log10)
+    plot!(1:50,1 ./Vector(1:50).^2 , xscale =:log10, yscale=:log10, label = "rif secondo ordine")
+    xaxis!("N")
+    yaxis!("Errore")
+    title!("Errore in norma L2")
+end
+
+begin
+    plot(1:50, errs_norminf, label = "errore al variare di h = 1/N" , yscale=:log10, xscale =:log10)
+    plot!(1:50,1 ./Vector(1:50) , xscale =:log10, yscale=:log10, label = "rif primo ordine")
+    xaxis!("N")
+    yaxis!("Errore")
+    title!("Errore in norma infinito")
+end
+
+    
+# -------------------------------------- CONDIZIONI NON OMOGENEE ---------------------------------------------------
+begin
+    
 
 end
+
+
 
 
 
