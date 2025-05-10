@@ -84,9 +84,26 @@ Impose Dirichlet boundary conditions on the system.
 - `uh`: The solution vector with Dirichlet conditions applied.
 """
 function impose_dirichlet(A, b, g, mesh)
-    ######################
-    ### COMPLETARE QUI ###
-    ######################
+    D = get_dirichletdofs(mesh)
+    F = get_freedofs(mesh)
+
+    A_cond = A[F,F]
+    # assembly of vector G
+    p = mesh.p
+    G = zeros(size(p,2))
+    for i in 1:size(p,2)
+        G[i] = g(p[:, i])
+    end    
+    b_cond = Vector(b[F]) - A[F, D]*G[D]
+    
+    uF = A_cond\b_cond
+    uD = zeros(size(D)[1])
+
+    u_h = zeros(size(p, 2))
+    u_h[F] = uF
+    u_h[D] = uD
+
+    return A_cond, b_cond, u_h
 end
 
 ########################################################################
