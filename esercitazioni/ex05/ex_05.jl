@@ -104,11 +104,13 @@ begin
         u_h = zeros(n_points)
         u_h[F] = uF
         u_h[D] = uD
+
+
+
         u_ex = (x) -> 0.25*(1 .- x[1, :].^2 .- x[2, :].^2)
         u_ex_on_points = u_ex(p)   
 
         append!(errs_norminf, maximum(abs.(u_ex_on_points .- u_h)))
-        
         append!(errs_norml2, L2error(u_ex,u_h,msh,quadratura))
     end
 end
@@ -137,31 +139,55 @@ end
 begin
     # test
     
-    g = (x) -> - exp(-x[1]^2 + x[2]^2)
-    func = (x) -> - exp(-x[1]^2 + x[2]^2)*(4*x[1]^2 + 4*x[2]^2)
-    h = 0.03
-    out_file = mesh_circle(h)
-    T, p = get_nodes_connectivity(out_file)
-    msh = Mesh_constructor(T, p)
+    function test(f, g, h, u_ex)
+        out_file = mesh_circle(h)
+        T, p = get_nodes_connectivity(out_file)
+        msh = Mesh_constructor(T, p)
 
-    boundary_tags, boundary_coords = get_boundary_nodes(out_file)
-    set_dirichletdofs!(msh, boundary_tags)
+        boundary_tags, boundary_coords = get_boundary_nodes(out_file)
+        set_dirichletdofs!(msh, boundary_tags)
 
-    initialize_assembly!(msh)
-    local_assembler(Ke, fe, msh, cell_index) = poisson_assemble_local!(Ke, fe, msh, cell_index, func)
-    # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
-    A, b = assemble_global(msh, local_assembler)
+        initialize_assembly!(msh)
+        local_assembler(Ke, fe, msh, cell_index) = poisson_assemble_local!(Ke, fe, msh, cell_index, func)
+        # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
+        A, b = assemble_global(msh, local_assembler)
 
+        A_cond, b_cond, u_h = impose_dirichlet(A, b, g, msh)
+        
+        quadratura = Q2_ref
+        err_l2 = L2error(u_ex,u_h,msh,quadratura)
 
-    A_cond, b_cond, u_h = impose_dirichlet(A, b, g, msh)
+        u_ex_on_points = u_ex(p)  
+        err_inf = maximum(abs.(u_ex_on_points .- u_h))
 
+        return err_l2, err_inf
+    end
+    
+    g = (x) ->  exp(-x[1]^2 + x[2]^2)
+    func = (x) -> - 4*exp(-x[1]^2 + x[2]^2)*(x[1]^2 + x[2]^2)
+    u_ex = (x) -> exp.(-x[1, :].^2 .+ x[2, :].^2)
 
-    u_ex = (x) -> - exp.(-x[1, :].^2 .+ x[2, :].^2)
-    quadratura = Q2_ref
-    println("errore:", L2error(u_ex,u_h,msh,quadratura))
+    test(func, g, 0.01, u_ex)
+end
+begin
+    H =  10 .^ range(-2, 0, length=10)
+    err_dirichlet_l2 = []
+    err_dirichlet_inf = []
+    for h in H
+        l2, inf  = test(func, g, h, u_ex)
+        append!(err_dirichlet_l2, l2 )
+        append!(err_dirichlet_inf, inf)
+    end
 end
 
 
+begin
+    scatter(H, err_dirichlet, label = "errore al variare di h " , yscale=:log10, xscale =:log10)
+    plot!(H, H.^2 , xscale =:log10, yscale=:log10, label = "rif secondo ordine")
+    xaxis!("h")
+    yaxis!("Errore")
+    title!("Errore in norma L2")
+end
 
 
 
