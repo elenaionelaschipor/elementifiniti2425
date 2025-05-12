@@ -241,6 +241,7 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
 
     quadr_matrix = Q2_ref
     phi_grad = ∇shapef_2DLFE(quadr_matrix)
+    phi_val_matrix= shapef_2DLFE(quadr_matrix)
     
     quadr_vect = Q2_ref
     phi_val_vector = shapef_2DLFE(quadr_vect)
@@ -258,8 +259,9 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
             # quindi contiene ... nel primo, ... nel secondo e poi nel terzo
             bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
             bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
-            for s in 1:size(quadr_matrix.points, 2) 
-                Ke[i, j] += bktm1_∇phi_i[:, s] ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] 
+            phi_j = phi_val_matrix[j, :]
+            for s in 1:size(quadr_matrix.points, 2) # sommo sui punti di quadratura
+                Ke[i, j] += bktm1_∇phi_i[:, s] ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta⋅bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] 
             end
         end 
         f_cap = (x) -> f(Bk*x+ak)
