@@ -152,7 +152,7 @@ begin
         # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
         A, b = assemble_global(msh, local_assembler)
 
-        A_cond, b_cond, u_h = impose_dirichlet(A, b, g, msh)
+        _, _, u_h = impose_dirichlet(A, b, g, msh)
         
         quadratura = Q2_ref
         err_l2 = L2error(u_ex,u_h,msh,quadratura)
