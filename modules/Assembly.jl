@@ -229,7 +229,7 @@ Assemble the local stiffness matrix and force vector for the Poisson problem.
 - `Ke`: The assembled local stiffness matrix.
 - `fe`: The assembled local force vector.
 """
-function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, beta)
+function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, K, f, beta)
     B, a = get_Bk!(mesh)
     detB = get_detBk!(mesh)
     invB= get_invBk!(mesh)
@@ -255,13 +255,14 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
 
     for i = 1:3
         for j = 1:3
+            K_cap = (x) -> K(Bk*x+ak) 
             # trasposta di invBk per gradiente della iesima phi in TUTTI i punti
             # quindi contiene ... nel primo, ... nel secondo e poi nel terzo
             bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
             bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
             phi_j = phi_val_matrix[j, :]
             for s in 1:size(quadr_matrix.points, 2) # sommo sui punti di quadratura
-                Ke[i, j] += bktm1_∇phi_i[:, s] ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta⋅bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] 
+                Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] 
             end
         end 
         f_cap = (x) -> f(Bk*x+ak)
