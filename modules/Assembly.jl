@@ -106,6 +106,53 @@ function impose_dirichlet(A, b, g, mesh)
     return A_cond, b_cond, u_h
 end
 
+
+
+""" impose dirichlet neumann_omo
+
+"""
+function impose_dirichlet_neumann_omo(A,b,mesh, D, N)
+    
+    F = setdiff(1:get_ndofs(msh), D)
+
+    A_cond = A[F,F]
+    # assembly of vector G
+    p = mesh.p
+    b_cond = Vector(b[F])
+    
+    uF = A_cond\b_cond
+    
+
+    u_h = zeros(size(p, 2))
+    u_h[F] = uF
+    
+    return A_cond, b_cond, u_h
+end
+
+
+function impose_dirichlet_neumann_full(A,b,mesh, g, D, N)
+    F = setdiff(1:get_ndofs(msh), D)
+
+    A_cond = A[F,F]
+    # assembly of vector G
+    p = mesh.p
+    G = zeros(size(p,2))
+    for i in 1:size(p,2)
+        G[i] = g(p[:, i])
+    end    
+
+
+    b_cond = Vector(b[F]) - A[F, D]*G[D] 
+
+    uF = A_cond\b_cond
+    uD = G[D]
+
+    u_h = zeros(size(p, 2))
+    u_h[F] = uF
+    u_h[D] = uD
+
+    return A_cond, b_cond, u_h
+end
 ########################################################################
 ########################### LOCAL ASSEMBLERS ###########################
 ########################################################################
@@ -176,12 +223,13 @@ Assemble the local stiffness matrix and force vector for the Poisson problem.
 - `mesh::Mesh`: The mesh object.
 - `cell_index::Integer`: The index of the current cell.
 - `f`: The source term function.
+- beta: the transport term
 
 # Returns
 - `Ke`: The assembled local stiffness matrix.
 - `fe`: The assembled local force vector.
 """
-function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f)
+function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, beta)
     B, a = get_Bk!(mesh)
     detB = get_detBk!(mesh)
     invB= get_invBk!(mesh)
@@ -211,7 +259,7 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
             bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
             bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
             for s in 1:size(quadr_matrix.points, 2) 
-                Ke[i, j] += bktm1_∇phi_i[:, s] ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s]    
+                Ke[i, j] += bktm1_∇phi_i[:, s] ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] 
             end
         end 
         f_cap = (x) -> f(Bk*x+ak)

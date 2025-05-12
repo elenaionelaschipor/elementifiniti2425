@@ -15,7 +15,7 @@ end
 # build the mesh with size h
 begin
     h = 0.5
-    out_file = mesh_circle(h)
+    out_file = mesh_square(h)
     T, p = get_nodes_connectivity(out_file)
     msh = Mesh_constructor(T, p)
 
@@ -197,6 +197,37 @@ begin
     yaxis!("Errore")
     title!("Errore in norma L2")
 end
+
+
+
+# aggiungiamo cond di neumann....
+begin
+    h = 0.1
+    out_file = mesh_square(h)
+    T, p = get_nodes_connectivity(out_file)
+    msh = Mesh_constructor(T, p)
+
+    D_tags, _ = get_boundary_nodes(out_file; labels = ["lower"])
+    boundary_tags, _ = get_boundary_nodes(out_file; labels = ["boundary"])
+    N_tags = setdiff(boundary_tags, D_tags)
+    F_tags = setdiff(1:get_ndofs(msh), boundary_tags)
+
+    # assembly
+    f(x) = 1
+    initialize_assembly!(msh)
+    local_assembler(Ke, fe, msh, cell_index) = poisson_assemble_local!(Ke, fe, msh, cell_index, f)
+    # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
+    A, b = assemble_global(msh, local_assembler)
+    g = (x) -> x[1] + x[2]
+    A_cond, b_cond, u_h = impose_dirichlet_neumann_full(A,b,msh,g, D_tags, N_tags)
+    plot_surf(msh, u_h)
+    
+end
+
+
+
+
+
 
 
 
