@@ -152,7 +152,7 @@ begin
         # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
         A, b = assemble_global(msh, local_assembler)
 
-        _, _, u_h = impose_dirichlet(A, b, g, msh)
+        A_cond, b_cond, u_h = impose_dirichlet(A, b, g, msh)
         
         quadratura = Q2_ref
         err_l2 = L2error(u_ex,u_h,msh,quadratura)
@@ -182,7 +182,7 @@ end
 
 begin
     scatter(H, err_dirichlet_l2, label = "errore al variare di h " , yscale=:log10, xscale =:log10)
-    plot!(H, H.^0.5 , xscale =:log10, yscale=:log10, label = "rif o(sqrt(h))")
+    plot!(H, H.^2, xscale =:log10, yscale=:log10, label = "rif o(h^2)")
     xaxis!("h")
     yaxis!("Errore")
     title!("Errore in norma L2")
@@ -192,7 +192,7 @@ end
 
 begin
     scatter(H, err_dirichlet_inf, label = "errore al variare di h " , yscale=:log10, xscale =:log10)
-    plot!(H, H.^0.5 , xscale =:log10, yscale=:log10, label = "rif o(sqrt(h))")
+    plot!(H, H, xscale =:log10, yscale=:log10, label = "rif o(h)")
     xaxis!("h")
     yaxis!("Errore")
     title!("Errore in norma L2")

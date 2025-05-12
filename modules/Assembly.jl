@@ -97,7 +97,7 @@ function impose_dirichlet(A, b, g, mesh)
     b_cond = Vector(b[F]) - A[F, D]*G[D]
     
     uF = A_cond\b_cond
-    uD = zeros(size(D)[1])
+    uD = G[D]
 
     u_h = zeros(size(p, 2))
     u_h[F] = uF
