@@ -290,7 +290,88 @@ Assemble the local stiffness matrix and force vector for the transport problem.
 - `fe`: The assembled local force vector.
 """
 function transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, k, β; stab = nothing, δ = 0.5)
-    ###########################################################################
-    ############################ ADD YOUR CODE HERE ###########################
-    ###########################################################################
+    B, a = get_Bk!(mesh)
+    detB = get_detBk!(mesh)
+    invB= get_invBk!(mesh)
+    Bk = B[:, :, cell_index]
+    ak = a[:, cell_index]
+    detBk = detB[cell_index]
+    invBk = invB[:, :, cell_index]
+
+
+    quadr_matrix = Q2_ref
+    phi_grad = ∇shapef_2DLFE(quadr_matrix)
+    phi_val_matrix= shapef_2DLFE(quadr_matrix)
+    
+    quadr_vect = Q2_ref
+    phi_val_vector = shapef_2DLFE(quadr_vect)
+    points_vector = quadr_vect.points
+
+
+    fill!(Ke, 0)
+    fill!(fe, 0)
+
+    weights_vector = quadr_vect.weights
+    weights_matrix = quadr_matrix.weights
+
+    for i = 1:3
+        for j = 1:3
+            K_cap = (x) -> K(Bk*x+ak) 
+            # trasposta di invBk per gradiente della iesima phi in TUTTI i punti
+            # quindi contiene ... nel primo, ... nel secondo e poi nel terzo
+            bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
+            bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
+            
+            phi_j = phi_val_matrix[j, :]
+            phi_i = phi_val_matrix[i, :]
+            for s in 1:size(quadr_matrix.points, 2) # sommo sui punti di quadratura
+                if isnothing(stab)
+                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] + δ* phi_i * phi_j
+                end
+
+                if stab == "NCAD"
+                    h_T = max([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
+                    eps_h = 0.5*norm(beta)*h_T
+                    Ke[i, j] += (eps_h*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] + δ* phi_i * phi_j
+                end
+                
+                if stab == "NCSD"
+                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] + δ* phi_i * phi_j
+                
+                    h_T = max([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
+                    eps_h = 0.5*norm(beta)*h_T
+                    n_beta = beta ./ norm(beta)
+                    Ke[i,j] += eps_h * (n_beta * bktm1_∇phi_i)  * (n_beta * bktm1_∇phi_j)
+                end
+
+                if stab == "SUPG"
+                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] + δ* phi_i * phi_j
+                    h_T = max([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
+                    
+                    tau_h = delta * h_T/norm(beta)  # assuming beta constant over all omega
+                    # devo far entrare in gioco il laplaciano non mi va stasera
+                    
+                end
+                
+            end
+        end 
+        f_cap = (x) -> f(Bk*x+ak)
+        # quadratura Q2
+        for l in 1:size(points_vector, 2)
+            fe[i] += weights_vector[l]*f_cap(points_vector[:, l])*phi_val_vector[i,  l] * detBk
+        end
+    end 
+    return Ke, fe
+
+
+
+
+
+
+
+
+
+
+
+
 end
