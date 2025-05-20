@@ -84,26 +84,20 @@ Impose Dirichlet boundary conditions on the system.
 - `uh`: The solution vector with Dirichlet conditions applied.
 """
 function impose_dirichlet(A, b, g, mesh)
-    D = get_dirichletdofs(mesh)
-    F = get_freedofs(mesh)
-
-    A_cond = A[F,F]
-    # assembly of vector G
-    p = mesh.p
-    G = zeros(size(p,2))
-    for i in 1:size(p,2)
-        G[i] = g(p[:, i])
-    end    
-    b_cond = Vector(b[F]) - A[F, D]*G[D]
+    # Get tags of dirichlet dofs and free dofs
+    ndofs = get_ndofs(mesh)
+    freedofs, dirichletdofs = get_freedofs(mesh), get_dirichletdofs(mesh)
+    # Impose Dirichlet BCs by lifting
+    uh = zeros(ndofs)
+    uh[dirichletdofs] = dropdims(mapslices(g, mesh.p[:, dirichletdofs]; dims=1); dims=1)
+                                    # applico g sui punti
+                        # è una matrice 2x1x1... diventa 2x1 (Esempio)
     
-    uF = A_cond\b_cond
-    uD = G[D]
+    # Modify the system to include Dirichlet BCs
+    A_cond = A[freedofs, freedofs]
+    b_cond = b[freedofs] - A[freedofs, dirichletdofs] * uh[dirichletdofs]
 
-    u_h = zeros(size(p, 2))
-    u_h[F] = uF
-    u_h[D] = uD
-
-    return A_cond, b_cond, u_h
+    return A_cond, b_cond, u
 end
 
 
@@ -272,4 +266,31 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
         end
     end 
     return Ke, fe
+end
+
+########################### TRANSPORT PROBLEM ###########################
+"""
+    transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, k, β; stab = nothing, δ = 0.5)
+
+Assemble the local stiffness matrix and force vector for the transport problem.
+
+# Arguments
+- `Ke::Matrix`: The local stiffness matrix to be assembled.
+- `fe::Vector`: The local force vector to be assembled.
+- `mesh::Mesh`: The mesh object.
+- `cell_index::Integer`: The index of the current cell.
+- `f`: The source term function.
+- `k`: The diffusion coefficient function.
+- `β`: The advection velocity function.
+- `stab`: The stabilization method (optional).
+- `δ`: The stabilization parameter (optional).
+
+# Returns
+- `Ke`: The assembled local stiffness matrix.
+- `fe`: The assembled local force vector.
+"""
+function transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, k, β; stab = nothing, δ = 0.5)
+    ###########################################################################
+    ############################ ADD YOUR CODE HERE ###########################
+    ###########################################################################
 end
