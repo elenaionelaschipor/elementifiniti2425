@@ -100,31 +100,11 @@ function impose_dirichlet(A, b, g, mesh)
     return A_cond, b_cond, u
 end
 
-
-
-""" impose dirichlet neumann_omo
-
 """
-function impose_dirichlet_neumann_omo(A,b,mesh, D, N)
+homogeneus neumann, imposed dirichlet
+"""
+function impose_dirichlet_neumann(A,b,mesh, g, D)
     
-    F = setdiff(1:get_ndofs(msh), D)
-
-    A_cond = A[F,F]
-    # assembly of vector G
-    p = mesh.p
-    b_cond = Vector(b[F])
-    
-    uF = A_cond\b_cond
-    
-
-    u_h = zeros(size(p, 2))
-    u_h[F] = uF
-    
-    return A_cond, b_cond, u_h
-end
-
-
-function impose_dirichlet_neumann_full(A,b,mesh, g, D, N)
     F = setdiff(1:get_ndofs(msh), D)
 
     A_cond = A[F,F]
@@ -205,6 +185,9 @@ Compute the gradients of the shape functions for the Poisson problem.
         return gradients
     end
 end
+
+
+ 
 
 """
     poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f)
@@ -326,31 +309,27 @@ function transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_inde
             phi_i = phi_val_matrix[i, :]
             for s in 1:size(quadr_matrix.points, 2) # sommo sui punti di quadratura
                 if isnothing(stab)
-                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] + δ* phi_i * phi_j
+                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] 
                 end
-
+                h_T = maximum([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
+                eps_h = 0.5*norm(beta)*h_T
+                    
                 if stab == "NCAD"
-                    h_T = max([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
-                    eps_h = 0.5*norm(beta)*h_T
-                    Ke[i, j] += (eps_h*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] + δ* phi_i * phi_j
+                    Ke[i, j] += (eps_h*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] 
                 end
                 
                 if stab == "NCSD"
-                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] + δ* phi_i * phi_j
-                
-                    h_T = max([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
-                    eps_h = 0.5*norm(beta)*h_T
+                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] 
                     n_beta = beta ./ norm(beta)
-                    Ke[i,j] += eps_h * (n_beta * bktm1_∇phi_i)  * (n_beta * bktm1_∇phi_j)
+                    Ke[i,j] += eps_h * (n_beta ⋅ bktm1_∇phi_i[:, s])  * (n_beta ⋅ bktm1_∇phi_j[:, s]) *detBk *weights_matrix[s]
                 end
 
                 if stab == "SUPG"
-                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] + δ* phi_i * phi_j
-                    h_T = max([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
-                    
-                    tau_h = delta * h_T/norm(beta)  # assuming beta constant over all omega
-                    # devo far entrare in gioco il laplaciano non mi va stasera
-                    
+                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] 
+                    tau_h = δ * h_T/norm(beta)  # assuming beta constant over all omega
+                    Ke[i,j] += tau_h * (beta ⋅ bktm1_∇phi_i[:, s])  * (beta ⋅ bktm1_∇phi_j[:, s])*detBk*weights_matrix[s] 
+
+
                 end
                 
             end
@@ -359,6 +338,13 @@ function transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_inde
         # quadratura Q2
         for l in 1:size(points_vector, 2)
             fe[i] += weights_vector[l]*f_cap(points_vector[:, l])*phi_val_vector[i,  l] * detBk
+            if stab=="SUPG"
+                h_T = maximum([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
+                eps_h = 0.5*norm(beta)*h_T
+                bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
+                tau_h = δ * h_T/norm(beta)  # assuming beta constant over all omega    
+                fe[i] += tau_h * f_cap(points_vector[:, l]) * beta ⋅ bktm1_∇phi_i[:, l]* detBk
+            end
         end
     end 
     return Ke, fe
