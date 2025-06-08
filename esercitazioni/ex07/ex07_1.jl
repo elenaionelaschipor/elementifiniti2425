@@ -18,9 +18,9 @@ end
 ###################### PROBLEMA DELLA RAMPA ######################
 begin
 # Define data
-ϵ = 1e-4
+ϵ(x) = 1e-4
 ϵ_fun(x) = ϵ
-β = [1, 0]
+β(x) = [1, 0]
 β_fun(x) = β
 f(x) = 1
 g(x) = 0

@@ -304,31 +304,33 @@ function transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_inde
             # quindi contiene ... nel primo, ... nel secondo e poi nel terzo
             bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
             bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
-            
+
+
             phi_j = phi_val_matrix[j, :]
             phi_i = phi_val_matrix[i, :]
             for s in 1:size(quadr_matrix.points, 2) # sommo sui punti di quadratura
+                beta_p = beta(quadr_matrix.points[:, s])
                 if isnothing(stab)
-                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
+                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
                 end
                 
                 h_T = maximum([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
-                eps_h = 0.5*norm(beta)*h_T
+                eps_h = 0.5*norm(beta_p)*h_T
                     
                 if stab == "NCAD"
-                    Ke[i, j] += (eps_h*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
+                    Ke[i, j] += (eps_h*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
                 end
                 
                 if stab == "NCSD"
-                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
-                    n_beta = beta ./ norm(beta)
-                    Ke[i,j] += eps_h * (n_beta ⋅ bktm1_∇phi_i[:, s])  * (n_beta ⋅ bktm1_∇phi_j[:, s]) *detBk *weights_matrix[s]
+                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
+                    n_beta_p = beta_p ./ norm(beta_p)
+                    Ke[i,j] += eps_h * (n_beta_p ⋅ bktm1_∇phi_i[:, s])  * (n_beta_p ⋅ bktm1_∇phi_j[:, s]) *detBk *weights_matrix[s]
                 end
 
                 if stab == "SUPG"
-                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
-                    tau_h = δ * h_T/norm(beta)  # assuming beta constant over all omega
-                    Ke[i,j] += tau_h * (beta ⋅ bktm1_∇phi_j[:, s])  * (beta ⋅ bktm1_∇phi_i[:, s])*detBk*weights_matrix[s] 
+                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
+                    tau_h = δ * h_T/norm(beta_p)  # assuming beta_p constant over all omega
+                    Ke[i,j] += tau_h * (beta_p ⋅ bktm1_∇phi_j[:, s])  * (beta_p ⋅ bktm1_∇phi_i[:, s])*detBk*weights_matrix[s] 
 
 
                 end
@@ -341,10 +343,10 @@ function transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_inde
             fe[i] += weights_vector[l]*f_cap(points_vector[:, l])*phi_val_vector[i,  l] * detBk
             if stab=="SUPG"
                 h_T = maximum([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
-                eps_h = 0.5*norm(beta)*h_T
+                eps_h = 0.5*norm(beta_p)*h_T
                 bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
-                tau_h = δ * h_T/norm(beta)  # assuming beta constant over all omega    
-                fe[i] += tau_h * f_cap(points_vector[:, l]) * beta ⋅ bktm1_∇phi_i[:, l]* detBk
+                tau_h = δ * h_T/norm(beta_p)  # assuming beta_p constant over all omega    
+                fe[i] += tau_h * f_cap(points_vector[:, l]) * beta_p ⋅ bktm1_∇phi_i[:, l]* detBk
             end
         end
     end 
