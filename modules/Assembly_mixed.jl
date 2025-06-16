@@ -60,8 +60,8 @@ Compute the Raviart-Thomas RT0 vector-valued shape functions on the reference tr
 # Returns
 - `shapef::Array{Float64,3}`: A 3D array of size (2, n, 3), where:
     - The first dimension (2) corresponds to the vector components (x and y).
-    - The second dimension (n) corresponds to the number of quadrature points.
-    - The third dimension (3) corresponds to the three RT0 basis functions.
+    - The second dimension (3) corresponds to the three RT0 basis functions.
+    - The third dimension (n) corresponds to the number of quadrature points.
 
 # Details
 The RT0 basis functions on the reference triangle are:
@@ -74,11 +74,22 @@ The function evaluates these basis functions at each quadrature point and return
 # Memoization
 The function is memoized to cache results for repeated calls with the same quadrature rule.
 """
-#@memoize 
+# @memoize
 function shapef_2D_RT0FE(quadrule::TriQuad)
-    ###########################################################################
-    ############################ ADD YOUR CODE HERE ###########################
-    ###########################################################################
+    phi_cap_1(x) = [x[1]; x[2]-1]
+    phi_cap_2(x) = [x[1];x[2]]
+    phi_cap_3(x) = [x[1]-1; x[2]]
+
+    p_cap = quadrule.points
+
+    n_points = size(p_cap, 2)
+    
+    shapef = zeros(2,3,n_points)
+    for i in 1:n_points
+        shapef[:, :, i] = [phi_cap_1(p_cap[:, i]); phi_cap_2(p_cap[:, i]) ; phi_cap_3(p_cap[:, i])]
+    end
+
+    return shapef
 end
 
 
@@ -103,9 +114,15 @@ Compute the divergence of the Raviart-Thomas RT0 vector-valued basis functions o
 """
 #@memoize 
 function divshapef_2D_RT0FE(quadrule::TriQuad)
-    ###########################################################################
-    ############################ ADD YOUR CODE HERE ###########################
-    ###########################################################################
+    n_points = size(quadrule.points, 2)
+    divshapef = zeros(1,3,n_points)
+    
+    for i in 1:n_points
+        divshapef[:, :, i] = [2;2;2]
+    end
+    return divshapef
+
+
 end
 
 """
@@ -135,9 +152,66 @@ This function computes the local contributions to the global system for the mixe
 """
 ########################### DARCY PROBLEM ###########################
 function darcy_assemble_local_mixed!(Ae::Matrix, Be::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, μ)
-    ###########################################################################
-    ############################ ADD YOUR CODE HERE ###########################
-    ###########################################################################
+    # stuff from the meshes
+    B, a = get_Bk!(mesh)
+    detB = get_detBk!(mesh)
+    invB= get_invBk!(mesh)
+    Bk = B[:, :, cell_index]
+    ak = a[:, cell_index]
+    detBk = detB[cell_index]
+    invBk = invB[:, :, cell_index]
+
+
+    quadr_matrix = Q2_ref
+    
+
+    phi = shapef_2D_RT0FE(quadr_matrix)
+    div_phi= divshapef_2D_RT0FE(quadr_matrix)
+    
+    # psi = 1 sul triangolo, la scrivo solo per ricordarcelo
+    quadr_vect = Q2_ref
+    
+    fill!(Ae, 0)
+    fill!(Be, 0)
+    fill!(fe, 0)
+
+    weights_vector = quadr_vect.weights
+    weights_matrix = quadr_matrix.weights
+    
+    μ_cap =  (x) -> μ(Bk*x+ak)
+    # assembly di A: dipende dai gradi di libertà dei RTK (ho 3 funzioni per ogni triangolo quindi 3x3)
+    for i in 1:3
+        for j in 1:3
+            for s in 1:size(quadr_matrix.points, 2)
+                println("-------------")
+                
+                primo_pezzo =μ_cap(quadr_matrix.points[:, s]) * elems2orientation[j, cell_index] * ( Bk* phi[:, j, s])
+                secondo_pezzo  =  elems2orientation[i, cell_index] * (Bk * phi[:, i, s]) * weights_matrix[s]/detBk
+
+                println(primo_pezzo)
+                println(secondo_pezzo)
+                Ae[i,j] += primo_pezzo ⋅ secondo_pezzo 
+            end
+        end 
+    end
+    
+    f_cap = (x) -> f(Bk*x+ak)
+    # la f è facile: la imposto come vettore 1x1 come dimensione ma del resto easy
+    for l in 1: size(quadr_vect.points, 2)
+        fe[1] += weights_vector[l]*f_cap(points_vector[:, l]) * detBk
+    end
+    # assembly della B: qua avrò 3 phi e 1 psi che è uguale a 1. 
+    for l in 1:3    
+        for s in 1:size(quadr_matrix.points, 2)
+            Be[1,l] += elems2orientation[l, cell_index]/detBk * div_phi[:, l, s]*weights_matrix[s]
+        end
+    end
+    
+    return Ke, fe
+
+
+
+
 end
 
 
