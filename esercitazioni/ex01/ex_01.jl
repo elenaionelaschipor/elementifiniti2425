@@ -1,11 +1,12 @@
-import Pkg
-Pkg.activate("C:/Users/elena_/Documents/GitHub/elementifiniti2425/elementifinitiunipv_pkg")
-using LinearAlgebra
-using SparseArrays
-using LaTeXStrings
-using Plots
-using Printf
-
+begin
+    import Pkg
+    Pkg.activate("C:/Users/elena_/Documents/GitHub/elementifiniti2425/elementifinitiunipv_pkg")
+    using LinearAlgebra
+    using SparseArrays
+    using LaTeXStrings
+    using Plots
+    using Printf
+end
 function f(x)
     return (pi^2)*cos.(pi*x)
     end

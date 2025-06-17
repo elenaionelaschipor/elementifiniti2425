@@ -63,7 +63,7 @@ function assemble_global(mesh::Mesh, local_assembler!)
         end    
     end
     A_glob = sparse(rows, cols, data, n_points, n_points)
-    F_glob = sparse(rows_f, ones(size(rows_f)), data_f)
+    F_glob = Matrix(sparse(rows_f, ones(size(rows_f)), data_f))
     return A_glob, F_glob
 end
 
@@ -97,7 +97,7 @@ function impose_dirichlet(A, b, g, mesh)
     A_cond = A[freedofs, freedofs]
     b_cond = b[freedofs] - A[freedofs, dirichletdofs] * uh[dirichletdofs]
 
-    return A_cond, b_cond, u
+    return A_cond, b_cond, uh
 end
 
 """
@@ -206,7 +206,7 @@ Assemble the local stiffness matrix and force vector for the Poisson problem.
 - `Ke`: The assembled local stiffness matrix.
 - `fe`: The assembled local force vector.
 """
-function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, K, f, beta)
+function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f)
     B, a = get_Bk!(mesh)
     detB = get_detBk!(mesh)
     invB= get_invBk!(mesh)
@@ -220,7 +220,7 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
     phi_grad = ∇shapef_2DLFE(quadr_matrix)
     phi_val_matrix= shapef_2DLFE(quadr_matrix)
     
-    quadr_vect = Q2_ref
+    quadr_vect = Q0_ref
     phi_val_vector = shapef_2DLFE(quadr_vect)
     points_vector = quadr_vect.points
 
@@ -232,14 +232,13 @@ function poisson_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index:
 
     for i = 1:3
         for j = 1:3
-            K_cap = (x) -> K(Bk*x+ak) 
             # trasposta di invBk per gradiente della iesima phi in TUTTI i punti
             # quindi contiene ... nel primo, ... nel secondo e poi nel terzo
             bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
             bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
             phi_j = phi_val_matrix[j, :]
             for s in 1:size(quadr_matrix.points, 2) # sommo sui punti di quadratura
-                Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta ⋅ bktm1_∇phi_i[:, s] ⋅ phi_j[s]*detBk*weights_matrix[s] 
+                Ke[i, j] += bktm1_∇phi_i[:, s] ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] 
             end
         end 
         f_cap = (x) -> f(Bk*x+ak)

@@ -36,7 +36,7 @@ errors = zeros( 3, 4)
     errors = zeros(3, 4)
 
 
-    meshhhh = Mesh(T_sq, p_sq)
+    meshhhh = Mesh_constructor(T_sq, p_sq)
     Quadrature(u1, meshhhh, Q0_ref)
     Bk, ak = get_Bk!(meshhhh)
     
@@ -45,14 +45,14 @@ errors = zeros( 3, 4)
         integrale_esatto = i_es[l]
         # println("cambio funzione -----------------")
         if l in 1:2  # square
-            mesh_sq = Mesh(T_sq, p_sq)
+            mesh_sq = Mesh_constructor(T_sq, p_sq)
             for i in 1:3
                 # println("cambio quadratura ----------------- ")
                 q = Quadrature(u, mesh_sq, methods[i])
                 errors[i, l] = abs(q-integrale_esatto)
             end
         else        # circle
-            mesh_circ = Mesh(T_circ,p_circ)
+            mesh_circ = Mesh_constructor(T_circ,p_circ)
             for i in 1:3  # q0, q1, q2...
                 # println("cambio quadratura ----------------- ")
                 q = Quadrature(u, mesh_circ, methods[i])
@@ -65,12 +65,12 @@ errors = zeros( 3, 4)
 
 # multiple values of h 
 
-H = 10 .^ range(-2, 0, length=5)
+H = 10 .^ range(-2, 0, length=10)
 
 methods = [Q0_ref, Q1_ref, Q2_ref]
 
-errors = zeros(5, 3, 4)
-for j in 1:5 
+errors = zeros(10, 3, 4)
+for j in 1:10
     h = H[j]
     mesh_square(h)
     mesh_circle(h)
@@ -82,13 +82,13 @@ for j in 1:5
         u = u_n[l]
         integrale_esatto = i_es[l]
         if l in 1:2  # square
-            mesh_sq = Mesh(T_ind_S, T_points_S)
+            mesh_sq = Mesh_constructor(T_ind_S, T_points_S)
             for i in 1:3
                 q = Quadrature(u, mesh_sq, methods[i])
                 errors[j, i, l] = abs(q-integrale_esatto)
             end
         else        # circle
-            mesh_circ = Mesh(T_ind_C, T_points_C)
+            mesh_circ = Mesh_constructor(T_ind_C, T_points_C)
             for i in 1:3  # q0, q1, q2...
                 q = Quadrature(u, mesh_circ, methods[i])
                 errors[j, i, l] = abs(q-integrale_esatto)
@@ -112,7 +112,7 @@ for z in 1:4
     plot!(H, H.^2,  xscale = :log10, yscale=:log10, label = L"riferimento $h^2$", lw = 2, ms = 2, ls = :dash)
     
     if z in 1:2
-        plot!(H, exp(-5).*H.^3 , xscale = :log10, yscale=:log10, label = L"riferimento $h^3$", lw = 2, ms = 2, ls = :dash)
+        plot!(H, H.^3 , xscale = :log10, yscale=:log10, label = L"riferimento $h^3$", lw = 2, ms = 2, ls = :dash)
     end
     display(p)
 end

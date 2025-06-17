@@ -26,7 +26,7 @@ begin
         # Build the mesh with mesh-size h    
         out_file = mesh_square(h)
         T, p = get_nodes_connectivity(out_file)
-        mesh = Mesh(T, p)
+        mesh = Mesh_constructor(T, p)
         # Compute the integral
         Q0_approx[i] = Quadrature(u, mesh, Q0_ref)
         Q1_approx[i] = Quadrature(u, mesh, Q1_ref)
@@ -63,7 +63,7 @@ begin
         # Build the mesh with mesh-size h    
         out_file = mesh_square(h)
         T, p = get_nodes_connectivity(out_file)
-        mesh = Mesh(T, p)
+        mesh = Mesh_constructor(T, p)
         # Compute the integral
         Q0_approx[i] = Quadrature(u, mesh, Q0_ref)
         Q1_approx[i] = Quadrature(u, mesh, Q1_ref)

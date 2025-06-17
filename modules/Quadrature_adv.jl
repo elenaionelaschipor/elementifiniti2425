@@ -72,13 +72,15 @@ function Quadrature(u, mesh::Mesh, ref_quad::TriQuad)
 
     for k in 1:size(mesh.T, 2)
         
-        p = Bk[:, :, k]*p_cap .+ ak[:, k] 
+        points_elem = Bk[:, :, k]*p_cap .+ ak[:, k] 
         # println(p)
         # fix here
         # p = reshape(F_k(p_cap), 2, size(p_cap, 2))
         # println(u(p))
         # println(k, size(w_cap), size(u(p)))
-        Q_k[k] = dot(w_cap, u(p))*detBk[k]
+        u_evals = eval_u(u, points_elem, mesh, k, ref_quad)
+
+        Q_k[k] = sum(w_cap.* u_evals)*detBk[k]
     
     end
     return sum(Q_k)

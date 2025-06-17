@@ -34,7 +34,7 @@ for (i, h) in enumerate(msh_sizes)
     # Build the mesh with mesh-size h    
     out_file = mesh_circle(h)
     T, p = get_nodes_connectivity(out_file)
-    msh = Mesh(T, p)
+    msh = Mesh_constructor(T, p)
     # Get Dirichlet dofs
     bnd_tags, bnd_coords = get_boundary_nodes(out_file)
     set_dirichletdofs!(msh, bnd_tags)
@@ -94,7 +94,7 @@ begin
     h = 0.1
     out_file = mesh_circle(h)
     T, p = get_nodes_connectivity(out_file)
-    msh = Mesh(T, p)
+    msh = Mesh_constructor(T, p)
     bnd_tags, bnd_coords = get_boundary_nodes(out_file)
     set_dirichletdofs!(msh, bnd_tags)
 

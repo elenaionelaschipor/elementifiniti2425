@@ -190,13 +190,13 @@ end
 
 
 
-begin
-    scatter(H, err_dirichlet_inf, label = "errore al variare di h " , yscale=:log10, xscale =:log10)
-    plot!(H, H, xscale =:log10, yscale=:log10, label = "rif o(h)")
-    xaxis!("h")
-    yaxis!("Errore")
-    title!("Errore in norma L2")
-end
+# begin
+#     scatter(H, err_dirichlet_inf, label = "errore al variare di h " , yscale=:log10, xscale =:log10)
+#     plot!(H, H, xscale =:log10, yscale=:log10, label = "rif o(h)")
+#     xaxis!("h")
+#     yaxis!("Errore")
+#     title!("Errore in norma L2")
+# end
 
 
 

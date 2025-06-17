@@ -53,5 +53,7 @@ end
 begin
     println("-------------------------------------------------------------")
     println("Relative error on A:\t $(norm(A - A_gridap) / norm(A_gridap))")
-    println("Relative error on b:\t $(norm(b - b_gridap) / norm(b_gridap))")
+    println("Absolute error on b:\t $(norm(b - b_gridap)))")
+    println("Norm of b:\t $(norm(b)))")
+    println("Norm of b gridap:\t $(norm(b_gridap))) ")
 end
