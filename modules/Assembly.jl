@@ -271,94 +271,95 @@ Assemble the local stiffness matrix and force vector for the transport problem.
 - `Ke`: The assembled local stiffness matrix.
 - `fe`: The assembled local force vector.
 """
-function transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, k, β; stab = nothing, δ = 0.5)
-    B, a = get_Bk!(mesh)
-    detB = get_detBk!(mesh)
-    invB= get_invBk!(mesh)
-    Bk = B[:, :, cell_index]
-    ak = a[:, cell_index]
-    detBk = detB[cell_index]
-    invBk = invB[:, :, cell_index]
+# function transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, k, β; stab = nothing, δ = 0.5)
+#     B, a = get_Bk!(mesh)
+#     detB = get_detBk!(mesh)
+#     invB= get_invBk!(mesh)
+#     Bk = B[:, :, cell_index]
+#     ak = a[:, cell_index]
+#     detBk = detB[cell_index]
+#     invBk = invB[:, :, cell_index]
 
 
-    quadr_matrix = Q2_ref
-    phi_grad = ∇shapef_2DLFE(quadr_matrix)
-    phi_val_matrix= shapef_2DLFE(quadr_matrix)
+#     quadr_matrix = Q2_ref
+#     phi_grad = ∇shapef_2DLFE(quadr_matrix)
+#     phi_val_matrix= shapef_2DLFE(quadr_matrix)
     
-    quadr_vect = Q2_ref
-    phi_val_vector = shapef_2DLFE(quadr_vect)
-    points_vector = quadr_vect.points
+#     quadr_vect = Q2_ref
+#     phi_val_vector = shapef_2DLFE(quadr_vect)
+#     points_vector = quadr_vect.points
 
 
-    fill!(Ke, 0)
-    fill!(fe, 0)
+#     fill!(Ke, 0)
+#     fill!(fe, 0)
 
-    weights_vector = quadr_vect.weights
-    weights_matrix = quadr_matrix.weights
+#     weights_vector = quadr_vect.weights
+#     weights_matrix = quadr_matrix.weights
 
-    for i = 1:3
-        for j = 1:3
-            K_cap = (x) -> K(Bk*x+ak) 
-            # trasposta di invBk per gradiente della iesima phi in TUTTI i punti
-            # quindi contiene ... nel primo, ... nel secondo e poi nel terzo
-            bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
-            bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
+#     for i = 1:3
+#         for j = 1:3
+#             K_cap = (x) -> K(Bk*x+ak) 
+#             # trasposta di invBk per gradiente della iesima phi in TUTTI i punti
+#             # quindi contiene ... nel primo, ... nel secondo e poi nel terzo
+#             bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
+#             bktm1_∇phi_j = transpose(invBk)*phi_grad[:, j, :]
 
 
-            phi_j = phi_val_matrix[j, :]
-            phi_i = phi_val_matrix[i, :]
-            for s in 1:size(quadr_matrix.points, 2) # sommo sui punti di quadratura
-                beta_p = beta(quadr_matrix.points[:, s])
-                if isnothing(stab)
-                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
-                end
+#             phi_j = phi_val_matrix[j, :]
+#             phi_i = phi_val_matrix[i, :]
+#             for s in 1:size(quadr_matrix.points, 2) # sommo sui punti di quadratura
+#                 beta_p = beta(quadr_matrix.points[:, s])
+#                 if isnothing(stab)
+#                     Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
+#                 end
                 
-                h_T = maximum([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
-                eps_h = 0.5*norm(beta_p)*h_T
+#                 h_T = maximum([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
+#                 βnormInf_T = maximum(norm.(beta_p, Inf))
+#                 eps_h = 0.5*βnormInf_T*h_T
                     
-                if stab == "NCAD"
-                    Ke[i, j] += (eps_h*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
-                end
+#                 if stab == "NCAD"
+#                     Ke[i, j] += (eps_h*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
+#                 end
                 
-                if stab == "NCSD"
-                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
-                    n_beta_p = beta_p ./ norm(beta_p)
-                    Ke[i,j] += eps_h * (n_beta_p ⋅ bktm1_∇phi_i[:, s])  * (n_beta_p ⋅ bktm1_∇phi_j[:, s]) *detBk *weights_matrix[s]
-                end
+#                 if stab == "NCSD"
+#                     Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
+#                     n_beta_p = beta_p ./ norm(beta_p)
+#                     Ke[i,j] += eps_h * (n_beta_p ⋅ bktm1_∇phi_i[:, s])  * (n_beta_p ⋅ bktm1_∇phi_j[:, s]) *detBk *weights_matrix[s]
+#                 end
 
-                if stab == "SUPG"
-                    Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
-                    tau_h = δ * h_T/norm(beta_p)  # assuming beta_p constant over all omega
-                    Ke[i,j] += tau_h * (beta_p ⋅ bktm1_∇phi_j[:, s])  * (beta_p ⋅ bktm1_∇phi_i[:, s])*detBk*weights_matrix[s] 
+#                 if stab == "SUPG"
+#                     Ke[i, j] += (K_cap(quadr_matrix.points[:, s])*bktm1_∇phi_i[:, s]) ⋅ bktm1_∇phi_j[:, s]*detBk*weights_matrix[s] +  beta_p ⋅ bktm1_∇phi_j[:, s] ⋅ phi_i[s]*detBk*weights_matrix[s] 
+#                     tau_h = δ * h_T/βnormInf_T  # assuming beta_p constant over all omega
+#                     Ke[i,j] += tau_h * (beta_p ⋅ bktm1_∇phi_j[:, s])  * (beta_p ⋅ bktm1_∇phi_i[:, s])*detBk*weights_matrix[s] 
 
 
-                end
+#                 end
                 
-            end
-        end 
-        f_cap = (x) -> f(Bk*x+ak)
-        # quadratura Q2
-        for l in 1:size(points_vector, 2)
-            fe[i] += weights_vector[l]*f_cap(points_vector[:, l])*phi_val_vector[i,  l] * detBk
-            if stab=="SUPG"
-                h_T = maximum([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
-                eps_h = 0.5*norm(beta_p)*h_T
-                bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
-                tau_h = δ * h_T/norm(beta_p)  # assuming beta_p constant over all omega    
-                fe[i] += tau_h * f_cap(points_vector[:, l]) * beta_p ⋅ bktm1_∇phi_i[:, l]* detBk
-            end
-        end
-    end 
-    return Ke, fe
+#             end
+#         end 
+#         f_cap = (x) -> f(Bk*x+ak)
+#         # quadratura Q2
+#         for l in 1:size(points_vector, 2)
+#             fe[i] += weights_vector[l]*f_cap(points_vector[:, l])*phi_val_vector[i,  l] * detBk
+#             if stab=="SUPG"
+#                 h_T = maximum([norm(Bk[:, 1]), norm(Bk[:, 2]), norm(Bk[:, 1] - Bk[:, 2])])
+#                 eps_h = 0.5*norm(beta_p)*h_T
+#                 bktm1_∇phi_i = transpose(invBk)*phi_grad[:, i, :]
+#                 tau_h = δ * h_T/norm(beta_p)  # assuming beta_p constant over all omega    
+#                 fe[i] += tau_h * f_cap(points_vector[:, l]) * beta_p ⋅ bktm1_∇phi_i[:, l]* detBk
+#             end
+#         end
+#     end 
+#     return Ke, fe
 
 
 
 
 
 
-end
+# end
 
-function transport_assemble_local_sol!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, k, β; stab = nothing, δ = 0.5)
+function transport_assemble_local!(Ke::Matrix, fe::Vector, mesh::Mesh, cell_index::Integer, f, k, β; stab = nothing, δ = 0.5)
 
     n_basefuncs = 3
     # Reset to 0

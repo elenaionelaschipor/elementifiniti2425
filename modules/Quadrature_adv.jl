@@ -123,7 +123,7 @@ Evaluate a function at given points within an element.
 # Returns
 - `u_evals::Matrix`: The evaluated function values at the given points.
 """
-function eval_u(u::Function, points_elem::Matrix, mesh::Mesh, tri_idx::Integer, quadrule::TriQuad)
+function eval_u(u::Function, points_elem::Matrix, mesh::Mesh, tri_idx::Integer , quadrule::TriQuad)
     return mapslices(u, points_elem, dims=1)
 end
 

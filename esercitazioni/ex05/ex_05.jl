@@ -55,14 +55,18 @@ end
 # plots
 begin
     plot_flat(msh, u_h)
+end
+begin
     plot_surf(msh, u_h)
 end
 
 # controllo della norma infinito
+function u_ex(x)
+    return 0.25*(1 .- x[1, :].^2 .- x[2, :].^2)
+end
 begin
-    u_ex = (x) -> 0.25*(1 .- x[1, :].^2 .- x[2, :].^2)
-    u_ex_on_points = u_ex(p)   
-
+    
+    u_ex_on_points = eval_u(u_ex, p, msh, 2, Q2_ref)
     norm_inf = maximum(abs.(u_ex_on_points .- u_h))
 
 end
@@ -79,7 +83,7 @@ begin
     errs_norml2 = []
     # controllo norma infinito al variare di h
     
-    H = 10 .^ range(-2, 0, length=10)
+    H = 10 .^ range(-2, 0, length=5)
     for h in H
         out_file = mesh_circle(h)
         T, p = get_nodes_connectivity(out_file)
@@ -105,11 +109,10 @@ begin
         u_h[F] = uF
         u_h[D] = uD
 
+        
 
-
-        u_ex = (x) -> 0.25*(1 .- x[1, :].^2 .- x[2, :].^2)
-        u_ex_on_points = u_ex(p)   
-
+        # u_ex = (x) -> 0.25*(1 .- x[1, :].^2 .- x[2, :].^2)
+        u_ex_on_points = eval_u(u_ex, p, msh, 2, Q2_ref)
         append!(errs_norminf, maximum(abs.(u_ex_on_points .- u_h)))
         append!(errs_norml2, L2error(u_ex,u_h,msh,quadratura))
     end
@@ -139,7 +142,7 @@ end
 begin
     # test
     
-    function test(f, g, h, u_ex)
+    function test(func, g, h, u_ex)
         out_file = mesh_circle(h)
         T, p = get_nodes_connectivity(out_file)
         msh = Mesh_constructor(T, p)
@@ -157,7 +160,7 @@ begin
         quadratura = Q2_ref
         err_l2 = L2error(u_ex,u_h,msh,quadratura)
 
-        u_ex_on_points = u_ex(p)  
+        u_ex_on_points = eval_u(u_ex, p, msh, 2, Q2_ref)
         err_inf = maximum(abs.(u_ex_on_points .- u_h))
 
         return err_l2, err_inf
@@ -165,16 +168,20 @@ begin
     
     g = (x) ->  exp(-x[1]^2 + x[2]^2)
     func = (x) -> - 4*exp(-x[1]^2 + x[2]^2)*(x[1]^2 + x[2]^2)
-    u_ex = (x) -> exp.(-x[1, :].^2 .+ x[2, :].^2)
-
-    test(func, g, 0.01, u_ex)
+    # u_ex = (x) -> exp.(-x[1, :].^2 .+ x[2, :].^2)
+    function u_ex_2(x)
+        return exp.(-x[1, :].^2 .+ x[2, :].^2)
+    end
+    test(func, g, 0.01, u_ex_2)
 end
+
+
 begin
-    H =  10 .^ range(-2, 0, length=10)
+    H =  10 .^ range(-2, 0, length=5)
     err_dirichlet_l2 = []
     err_dirichlet_inf = []
     for h in H
-        l2, inf  = test(func, g, h, u_ex)
+        l2, inf  = test(func, g, h, u_ex_2)
         append!(err_dirichlet_l2, l2 )
         append!(err_dirichlet_inf, inf)
     end
