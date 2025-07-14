@@ -27,7 +27,7 @@ begin
     # assembly
     f(x) = 1
     K = (x) -> 1
-    beta = (x) -> [0., 0.]
+    beta = (x) -> [1., 0.]
     initialize_assembly!(msh)  
     local_assembler(Ke, fe, msh, cell_index) = transport_assemble_local!(Ke, fe, msh, cell_index, f, K, beta)
     # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
@@ -69,7 +69,7 @@ begin
 end
 
 
-# aggiungiamo k :=)
+# aggiungiamo k 
 
 begin
     h = 0.1
@@ -77,7 +77,7 @@ begin
     T, p = get_nodes_connectivity(out_file)
     msh = Mesh_constructor(T, p)
 
-    D_tags, _ = get_boundary_nodes(out_file; labels = ["left"])
+    D_tags, _ = get_boundary_nodes(out_file; labels = ["right"])
     boundary_tags, _ = get_boundary_nodes(out_file; labels = ["boundary"])
     N_tags = setdiff(boundary_tags, D_tags)  # should be empty
     F_tags = setdiff(1:get_ndofs(msh), D_tags)

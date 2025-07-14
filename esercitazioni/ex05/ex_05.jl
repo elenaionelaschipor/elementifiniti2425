@@ -4,7 +4,8 @@ begin
     using Revise
     using Plots
     using LinearAlgebra
-
+end
+begin 
     # Load the necessary files
     includet("C:/Users/elena_/Documents/GitHub/elementifiniti2425/modules/Meshing.jl")
     includet("C:/Users/elena_/Documents/GitHub/elementifiniti2425/modules/Quadrature_adv.jl")
@@ -14,7 +15,7 @@ end
 
 # build the mesh with size h
 begin
-    h = 0.5
+    h = 0.2
     out_file = mesh_square(h)
     T, p = get_nodes_connectivity(out_file)
     msh = Mesh_constructor(T, p)
