@@ -101,7 +101,7 @@ function impose_dirichlet(A, b, g, mesh)
 end
 
 """
-homogeneus neumann, imposed dirichlet
+homogeneous neumann, imposed dirichlet
 """
 function impose_dirichlet_neumann(A,b,mesh, g, D)
     

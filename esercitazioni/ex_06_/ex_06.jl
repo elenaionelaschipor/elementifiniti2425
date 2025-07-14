@@ -27,12 +27,13 @@ begin
     # assembly
     f(x) = 1
     K = (x) -> 1
-    initialize_assembly!(msh)
-    local_assembler(Ke, fe, msh, cell_index) = poisson_assemble_local!(Ke, fe, msh, cell_index, K, f, [0.,0.])
+    beta = (x) -> [0., 0.]
+    initialize_assembly!(msh)  
+    local_assembler(Ke, fe, msh, cell_index) = transport_assemble_local!(Ke, fe, msh, cell_index, f, K, beta)
     # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
     A, b = assemble_global(msh, local_assembler)
-    g = (x) -> x[1] + x[2]
-    A_cond, b_cond, u_h = impose_dirichlet_neumann_full(A,b,msh,g, D_tags, N_tags)
+    g = (x) -> 0 # x[1] + x[2]
+    A_cond, b_cond, u_h = impose_dirichlet_neumann(A,b,msh,g, D_tags)
     plot_surf(msh, u_h)
     
 end
@@ -54,13 +55,15 @@ begin
     # assembly
     f(x) = 1
     K = (x) -> 1
+    
+    beta = (x) -> [0., -15.]
     initialize_assembly!(msh)
-    local_assembler(Ke, fe, msh, cell_index) = poisson_assemble_local!(Ke, fe, msh, cell_index,K, f, [0.,-10])
+    local_assembler(Ke, fe, msh, cell_index) = transport_assemble_local!(Ke, fe, msh, cell_index, f, K, beta)
     # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
     A, b = assemble_global(msh, local_assembler)
-    g = (x) -> 0.5x[1] + exp(-x[2])
+    g = (x) -> 0 #  0.5x[1] + exp(-x[2])
     
-    A_cond, b_cond, u_h = impose_dirichlet_neumann_full(A,b,msh,g, D_tags, N_tags)
+    A_cond, b_cond, u_h = impose_dirichlet_neumann(A,b,msh,g, D_tags)
     plot_surf(msh, u_h)
     
 end
@@ -82,13 +85,15 @@ begin
     # assembly
     f(x) = 1
     K = (x) -> 0.01
+    
+    beta = (x) -> [0., 10.]
     initialize_assembly!(msh)
-    local_assembler(Ke, fe, msh, cell_index) = poisson_assemble_local!(Ke, fe, msh, cell_index,K, f, [0.,50])
+    local_assembler(Ke, fe, msh, cell_index) =  transport_assemble_local!(Ke, fe, msh, cell_index, f, K, beta)
     # vuol dire che f è fissato, tutto il resto no quindi va in input delle altre cose
     A, b = assemble_global(msh, local_assembler)
     g = (x) -> 0
     
-    A_cond, b_cond, u_h = impose_dirichlet_neumann_full(A,b,msh,g, D_tags, N_tags)
+    A_cond, b_cond, u_h = impose_dirichlet_neumann(A,b,msh,g, D_tags)
     plot_surf(msh, u_h)
     
 end
