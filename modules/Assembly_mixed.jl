@@ -42,11 +42,59 @@ Assembles the global mixed finite element system matrices and right-hand side ve
 - `K`: The global system matrix assembled as a block matrix, where the upper-left block corresponds to the velocity matrix, the upper-right and lower-left blocks correspond to the coupling (pressure) matrices, and the lower-right block is a zero matrix.
 - `b`: The global right-hand side vector, concatenating zeros for velocity DOFs and the assembled force vector for pressure DOFs.
 """
+
 function assemble_global_mixed(mesh::Mesh, local_assembler!)
-    ###########################################################################
-    ############################ ADD YOUR CODE HERE ###########################
-    ###########################################################################
+    T = mesh.T
+    p = mesh.p
+    n_points = size(p,2)
+    n_triangles = size(T, 2)
+    rows = []
+    cols = []
+    data = Float64[]
+    
+    rows_f = []
+    data_f = Float64[]
+
+    A_loc = zeros(3,3)
+    
+    B_loc = zeros(1,3)
+    f_loc = zeros(3)
+
+    rows_B = []
+    cols_B = []
+    data_B = []
+    for k in 1:n_triangles
+        local_assembler!(A_loc, B_loc, f_loc, mesh, k) 
+        indices = T[:, k]
+    
+        for i in 1:3
+            i_glob = indices[i]
+            for j in 1:3
+                j_glob = indices[j]
+                append!(rows, i_glob)
+                append!(cols, j_glob)
+                append!(data, A_loc[i,j])
+            end
+            append!(rows_f, i_glob)
+            append!(data_f, f_loc[i])
+        end    
+
+        for j in 1:3
+            append!(rows_B, k)
+            append!(cols_B, indices[j])
+            append!(data_B, B_loc[k,j])
+            
+
+
+
+    end
+    A = sparse(rows, cols, data, n_points, n_points)
+    B = sparse(rows_B, cols_B, data_B, n_triangles, n_points)
+    f = Matrix(sparse(rows_f, ones(size(rows_f)), data_f))
+    return A,B,f
 end
+
+
 
 
 """
@@ -198,19 +246,16 @@ function darcy_assemble_local_mixed!(Ae::Matrix, Be::Matrix, fe::Vector, mesh::M
     f_cap = (x) -> f(Bk*x+ak)
     # la f è facile: la imposto come vettore 1x1 come dimensione ma del resto easy
     for l in 1: size(quadr_vect.points, 2)
-        fe[1] += weights_vector[l]*f_cap(points_vector[:, l]) * detBk
+        fe[1] += weights_vector[l]*f_cap(quadr_vect.points[:, l]) * detBk
     end
     # assembly della B: qua avrò 3 phi e 1 psi che è uguale a 1. 
     for l in 1:3    
         for s in 1:size(quadr_matrix.points, 2)
-            Be[1,l] += elems2orientation[l, cell_index]/detBk * div_phi[:, l, s]*weights_matrix[s]
+            Be[1,l] += elems2orientation[l, cell_index]/detBk * div_phi[1, l, s]*weights_matrix[s]
         end
     end
     
-    return Ke, fe
-
-
-
+    return Ae, Be, fe
 
 end
 

@@ -42,7 +42,7 @@ end
 # layer caratteristico
 
 begin
-    stab = "SUPG"
+    stab = nothing
     h = 0.05
     out_file = mesh_square(h)
     T, p = get_nodes_connectivity(out_file)
